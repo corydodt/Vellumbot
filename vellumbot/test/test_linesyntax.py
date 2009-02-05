@@ -26,15 +26,15 @@ class LinesyntaxTestCase(unittest.TestCase):
 
     def test_commands(self):
         _test_commands = [
-        (".hello",                                  [('hello', None)]),
-        (".foo bar",                                [('foo', 'bar')]),
-        (". foo",                                   [('foo', None)]),
+        (".hello",                                  [(None, 'hello', None)]),
+        (".foo bar",                                [(None, 'foo', 'bar')]),
+        (". foo",                                   [(None, 'foo', None)]),
         ("..foo",                                   ParserSyntaxError),
-        ("VellumBot:foo",                           [('foo', None)]),
-        ("velluMBot,foo",                           [('foo', None)]),
+        ("VellumBot:foo",                           [('vellumbot', 'foo', None)]),
+        ("velluMBot,foo",                           [('vellumbot', 'foo', None)]),
         ("VellumBot foo",                           RuntimeError),
-        ("VellumBot: foo",                          [('foo', None)]),
-        ("velluMBot, foo",                          [('foo', None)]),
+        ("VellumBot: foo",                          [('vellumbot', 'foo', None)]),
+        ("velluMBot, foo",                          [('vellumbot', 'foo', None)]),
         ("tesTBotfoo",                              RuntimeError),
         ]
 
@@ -65,6 +65,8 @@ class LinesyntaxTestCase(unittest.TestCase):
                                                'commandArgs': []})
         eqsent(sen('.charname bob bob'),       {'command': 'charname', 
                                                'commandArgs': ['bob','bob']})
+        r = sen("TestBot, n")
+        self.assertEqual(r.botName,            'testbot')  
         eqsent(sen("TestBot, n"),              {'command': 'n',
                                                'commandArgs': []})
         eqsent(sen("testbot, n"),              {'command': 'n',

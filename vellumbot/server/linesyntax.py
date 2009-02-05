@@ -30,7 +30,7 @@ r'''# irc bot commands and recognized sentences
 <commandLeader>         := '.'
 commandIdentifier       := identifier
 
-<botname>               := identifier
+botname                 := identifier
 
 <hail>                  := botname, ws, (':'/','), ws
 
@@ -92,6 +92,7 @@ actor = re.compile(r'\*[a-zA-Z][a-zA-Z0-9_]*')
 class CommandProcessor(disp.DispatchProcessor):
     commandArgsFound = None
     commandName = None
+    botName = None
 
     def commandIdentifier(self, (t,s1,s2,sub), buffer):
         disp.dispatchList(self, sub, buffer)
@@ -102,7 +103,10 @@ class CommandProcessor(disp.DispatchProcessor):
 
     def command(self, (t,s1,s2,sub), buffer):
         disp.dispatchList(self, sub, buffer)
-        return self.commandName, self.commandArgsFound
+        return self.botName, self.commandName, self.commandArgsFound
+
+    def botname(self, (t,s1,s2,sub), buffer):
+        self.botName = buffer[s1:s2].lower()
 
 def parseCommand(s):
     commandParser = parser.Parser(grammar, root="commandRoot")
@@ -116,6 +120,7 @@ def parseCommand(s):
 class Sentence(object):
     def __init__(self):
         self.diceExpression = None
+        self.botName = None
         self.command = None
         self._commandArgs = []
         self.actor = None
@@ -177,6 +182,7 @@ def parseSentence(s):
         raise RuntimeError('%s is not a sentence' % (s,))
 
     if sp.commandName:
+        sent.botName = sp.botName
         sent.command = sp.commandName
         sent.commandArgs = sp.commandArgsFound
         return sent
