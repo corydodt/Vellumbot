@@ -1,0 +1,23 @@
+Recognized commands:
+    %(commands)s
+Commands can be used one of two ways, by hailing me or with ".":
+    <Biff> VellumTalk: hello
+    <VellumTalk> Biff, hello.
+    <Biff> .hello
+    <VellumTalk> Biff, hello.
+I also understand dice aliases...
+    <Biff> I roll [1d20+1]
+    <VellumTalk> Biff, you rolled 1d20+1 = [16+1 = 17]
+    <Biff> I roll [smackdown 1d10+17]
+    <VellumTalk> Biff, you rolled smackdown 1d10+17 = [6+17 = 23]
+    <Biff> I use a few more attacks, [smackdown] [smackdown]
+    <VellumTalk> Biff, you rolled smackdown = [4+17 = 21]
+    <VellumTalk> Biff, you rolled smackdown = [9+17 = 26]
+And temporarily modifying aliases...
+    <Biff> I use my super ninja [smackdown +20] on the unsuspecting peasant.
+    <VellumTalk> Biff, you rolled smackdown +20 = [7+17+20 = 44]
+I also understand "npc hijacking".
+    <GeeEm> With a snarl, *grimlock1 takes a [bite 1d20+2] out of crime.
+    <VellumTalk> grimlock1, you rolled bite 1d20+2 = [9+2 = 11]
+
+. . . http://vellum.berlios.de
