@@ -1,5 +1,11 @@
 import unittest
 
+from twisted.internet import protocol
+from twisted.words.test.test_irc import StringIOWithoutClosing
+
+from vellumbot.server import alias, d20session
+from vellumbot.server.irc import VellumTalk
+
 class ResponseTest:
     """Notation for testing a response to a command."""
     def __init__(self, factory, user, channel, sent, *recipients):
@@ -19,15 +25,11 @@ class ResponseTest:
         pipe = self.factory.pipe
         pipe.seek(self.factory.pipe_pos)
         actual = pipe.read().strip()
+        if self.sent == 'VellumTalk: hello':
+            import pdb; pdb.set_trace()
         self.factory.pipe_pos = pipe.tell()
         if self.recipients is None:
-            if actual == '':
-                pass
-            else:
-                print
-                print "(Expected: '')"
-                print actual
-                return
+            return actual == ''
         else:
             for _line in actual.splitlines():
                 for target, expected in self.recipients:
@@ -39,14 +41,15 @@ class ResponseTest:
                         self.satisfy(target, expected)
                 # pass when there are no recipients left to satisfy
                 if len(self.recipients) == 0:
-                    break
+                    return True
             else:
-                print
-                for target, expected in self.recipients:
-                    print ' '*10 + ' '*len(target) + expected
-                print actual
-                return
-        return 1
+                ### print
+                ### for target, expected in self.recipients:
+                ###    print ' '*10 + ' '*len(target) + expected
+                ### print actual
+                ### return
+                return False
+        return True #?
 
     def satisfy(self, target, expected):
         self.recipients.remove((target, expected))
@@ -66,125 +69,106 @@ class ResponseTestFactory:
 
 
 class IRCTestCase(unittest.TestCase):
-    def test_everything(self):
-        passed = 0
-        def succeed():
-            global passed
-            passed = passed + 1
-            sys.stdout.write('.')
+    factory = None
 
-        from twisted.words.test.test_irc import StringIOWithoutClosing
-        pipe = StringIOWithoutClosing()
-        factory = ResponseTestFactory(pipe)
-        GeeEm = (lambda channel, target, *recipients: 
-                    factory.next('GeeEm', channel, target, *recipients))
-        Player = (lambda channel, target, *recipients: 
-                    factory.next('Player', channel, target, *recipients))
+    def setUp(self):
+        if self.factory is None:
+            pipe = StringIOWithoutClosing()
+            self.factory = ResponseTestFactory(pipe)
 
-        testcommands = [
-        GeeEm('VellumTalk', 'hello',),
-        GeeEm('VellumTalk', 'OtherGuy: hello',),
-        GeeEm('VellumTalk', 'VellumTalk: hello', ('GeeEm', r'Hello GeeEm\.')),
-        GeeEm('VellumTalk', 'Vellumtalk: hello there', ('GeeEm', r'Hello GeeEm\.')),
-        GeeEm('VellumTalk', '.hello', ('GeeEm', r'Hello GeeEm\.')),
-        GeeEm('#testing', 'hello',),
-        GeeEm('#testing', 'VellumTalk: hello', ('#testing', r'Hello GeeEm\.')),
-        GeeEm('#testing', '.hello', ('#testing', r'Hello GeeEm\.')),
-        GeeEm('VellumTalk', '.inits', ('GeeEm', r'Initiative list: \(none\)')),
-        GeeEm('VellumTalk', '.combat', ('GeeEm', r'\*\* Beginning combat \*\*')),
-        GeeEm('#testing', '[init 20]', 
-              ('#testing', r'GeeEm, you rolled: init 20 = \[20\]')),
-        GeeEm('VellumTalk', '.n', ('GeeEm', r'\+\+ New round \+\+')),
-        GeeEm('VellumTalk', '.n', 
-              ('GeeEm', r'GeeEm \(init 20\) is ready to act \. \. \.')),
-        GeeEm('VellumTalk', '.p', ('GeeEm', r'\+\+ New round \+\+')),
-        GeeEm('VellumTalk', '.p', 
-              ('GeeEm', r'GeeEm \(init 20\) is ready to act \. \. \.')),
-        GeeEm('VellumTalk', '.inits', 
-              ('GeeEm', r'Initiative list: GeeEm/20, NEW ROUND/9999')),
-        # GeeEm('VellumTalk', '.help', ('GeeEm', r'\s+hello: Greet\.')), FIXME
-        GeeEm('VellumTalk', '.aliases', ('GeeEm', r'Aliases for GeeEm:   init=20')),
-        GeeEm('VellumTalk', '.aliases GeeEm', 
-              ('GeeEm', r'Aliases for GeeEm:   init=20')),
-        GeeEm('VellumTalk', '.unalias foobar', 
-              ('GeeEm', r'\*\* No alias "foobar" for GeeEm')),
-        GeeEm('#testing',  'hello [argh 20] [foobar 30]', 
-              ('#testing', r'GeeEm, you rolled: argh 20 = \[20\]')),
-        GeeEm('#testing',  '[argh +1]', 
-              ('#testing', r'GeeEm, you rolled: argh \+1 = \[20\+1 = 21\]')),
-        GeeEm('VellumTalk', '.unalias init', 
-              ('GeeEm', r'GeeEm, removed your alias for init')),
-        GeeEm('VellumTalk', '.aliases', 
-              ('GeeEm', r'Aliases for GeeEm:   argh=20, foobar=30')),
-        ]
-
-        testhijack = [
-        GeeEm('VellumTalk', '*grimlock1 does a [smackdown 1000]', 
-              ('GeeEm', 'grimlock1, you rolled: smackdown 1000 = \[1000\]')),
-        GeeEm('#testing', '*grimlock1 does a [bitchslap 1000]', 
-              ('#testing', 'grimlock1, you rolled: bitchslap 1000 = \[1000\]')),
-        GeeEm('VellumTalk', '*grimlock1 does a [smackdown]', 
-              ('GeeEm', 'grimlock1, you rolled: smackdown = \[1000\]')),
-        GeeEm('VellumTalk', 'I do a [smackdown]'),
-        GeeEm('VellumTalk', '.aliases grimlock1', 
-              ('GeeEm', 'Aliases for grimlock1:   bitchslap=1000, smackdown=1000')),
-        GeeEm('VellumTalk', '.unalias grimlock1 smackdown', 
-              ('GeeEm', 'grimlock1, removed your alias for smackdown')),
-        GeeEm('VellumTalk', '.aliases grimlock1', 
-              ('GeeEm', 'Aliases for grimlock1:   bitchslap=1000')),
-        ]
-
-        testobserved = [
-        GeeEm('VellumTalk', '.gm', 
-              ('GeeEm', r'GeeEm is now a GM and will observe private messages for session #testing')),
-        Player('VellumTalk', '[stabtastic 20]', 
-           ('GeeEm', r'Player, you rolled: stabtastic 20 = \[20\] \(<Player>  \[stabtastic 20\]\)'),
-           ('Player', r'Player, you rolled: stabtastic 20 = \[20\] \(observed\)')
-           )
-        ]
-
-        testobserverchange = [
-        GeeEm("VellumTalk", '[stabtastic 20]',
-                ('GeeEm', r'GeeEm, you rolled: stabtastic 20 = \[20\]$'),
-              )
-        ]
-
-        testunobserved = [
-        Player('VellumTalk', '[stabtastic 20]', 
-           ('Player', r'Player, you rolled: stabtastic 20 = \[20\]$')
-           )
-        ]
         # TODO - move d20-specific tests, e.g. init and other alias hooks?
+        # save off and clear alias.aliases, since it gets persisted # FIXME
+        orig_aliases = alias.aliases
+        alias.aliases = {}
 
-        def test():
-            # save off and clear alias.aliases, since it gets persisted # FIXME
-            orig_aliases = alias.aliases
-            alias.aliases = {}
-            try:
-                transport = protocol.FileWrapper(pipe)
-                vt = VellumTalk()
-                vt.performLogin = 0
-                vt.joined("#testing")
-                vt.defaultSession = d20session.D20Session('#testing')
-                vt.makeConnection(transport)
+        transport = protocol.FileWrapper(pipe)
+        vt = self.vt = VellumTalk()
+        vt.performLogin = 0
+        vt.joined("#testing")
+        vt.defaultSession = d20session.D20Session('#testing')
+        vt.makeConnection(transport)
 
-                testOneSet(testcommands, vt)
-                testOneSet(testhijack, vt)
-                testOneSet(testobserved, vt)
+    def geeEm(self, channel, target, *recipients):
+        r = self.factory.next('GeeEm', channel, target, *recipients)
+        self.vt.privmsg(r.user, r.channel, r.sent)
+        self.assertTrue(r.check())
 
-                vt.userRenamed('Player', 'Superman')
-                testOneSet(testobserverchange, vt)
-                vt.userLeft('GeeEm', '#testing')
-                testOneSet(testunobserved, vt)
-            finally:
-                # restore original aliases when done, so save works
-                alias.aliases = orig_aliases
-                global passed
-                print passed
-                passed = 0
+    def player(self, channel, target, *recipients):
+        r = self.factory.next('Player', channel, target, *recipients)
+        self.vt.privmsg(r.user, r.channel, r.sent)
+        self.assertTrue(r.check())
 
-        def testOneSet(test_list, vt):
-            for r in test_list:
-                vt.privmsg(r.user, r.channel, r.sent)
-                if r.check():
-                    succeed()
+    def test_everything(self):
+        self.geeEm('VellumTalk', 'hello')
+        self.geeEm('VellumTalk', 'OtherGuy: hello')
+        self.geeEm('VellumTalk', 'VellumTalk: hello', ('GeeEm', r'Hello GeeEm\.'))
+        self.geeEm('VellumTalk', 'Vellumtalk: hello there', ('GeeEm', r'Hello GeeEm\.'))
+        self.geeEm('VellumTalk', '.hello', ('GeeEm', r'Hello GeeEm\.'))
+        self.geeEm('#testing', 'hello',)
+        self.geeEm('#testing', 'VellumTalk: hello', ('#testing', r'Hello GeeEm\.'))
+        self.geeEm('#testing', '.hello', ('#testing', r'Hello GeeEm\.'))
+        self.geeEm('VellumTalk', '.inits', ('GeeEm', r'Initiative list: \(none\)'))
+        self.geeEm('VellumTalk', '.combat', ('GeeEm', r'\*\* Beginning combat \*\*'))
+        self.geeEm('#testing', '[init 20]', 
+              ('#testing', r'self.geeEm, you rolled: init 20 = \[20\]'))
+        self.geeEm('VellumTalk', '.n', ('GeeEm', r'\+\+ New round \+\+'))
+        self.geeEm('VellumTalk', '.n', 
+              ('self.geeEm', r'GeeEm \(init 20\) is ready to act \. \. \.'))
+        self.geeEm('VellumTalk', '.p', ('GeeEm', r'\+\+ New round \+\+'))
+        self.geeEm('VellumTalk', '.p', 
+              ('self.geeEm', r'GeeEm \(init 20\) is ready to act \. \. \.'))
+        self.geeEm('VellumTalk', '.inits', 
+              ('self.geeEm', r'Initiative list: GeeEm/20, NEW ROUND/9999'))
+        # self.geeEm('VellumTalk', '.help', ('GeeEm', r'\s+hello: Greet\.')), FIXME
+        self.geeEm('VellumTalk', '.aliases', ('GeeEm', r'Aliases for GeeEm:   init=20'))
+        self.geeEm('VellumTalk', '.aliases GeeEm', 
+              ('self.geeEm', r'Aliases for GeeEm:   init=20'))
+        self.geeEm('VellumTalk', '.unalias foobar', 
+              ('self.geeEm', r'\*\* No alias "foobar" for GeeEm'))
+        self.geeEm('#testing',  'hello [argh 20] [foobar 30]', 
+              ('#testing', r'self.geeEm, you rolled: argh 20 = \[20\]'))
+        self.geeEm('#testing',  '[argh +1]', 
+              ('#testing', r'self.geeEm, you rolled: argh \+1 = \[20\+1 = 21\]'))
+        self.geeEm('VellumTalk', '.unalias init', 
+              ('self.geeEm', r'GeeEm, removed your alias for init'))
+        self.geeEm('VellumTalk', '.aliases', 
+              ('self.geeEm', r'Aliases for GeeEm:   argh=20, foobar=30'))
+
+        # testhijack
+        self.geeEm('VellumTalk', '*grimlock1 does a [smackdown 1000]', 
+              ('self.geeEm', 'grimlock1, you rolled: smackdown 1000 = \[1000\]'))
+        self.geeEm('#testing', '*grimlock1 does a [bitchslap 1000]', 
+              ('#testing', 'grimlock1, you rolled: bitchslap 1000 = \[1000\]'))
+        self.geeEm('VellumTalk', '*grimlock1 does a [smackdown]', 
+              ('self.geeEm', 'grimlock1, you rolled: smackdown = \[1000\]'))
+        self.geeEm('VellumTalk', 'I do a [smackdown]')
+        self.geeEm('VellumTalk', '.aliases grimlock1', 
+              ('self.geeEm', 'Aliases for grimlock1:   bitchslap=1000, smackdown=1000'))
+        self.geeEm('VellumTalk', '.unalias grimlock1 smackdown', 
+              ('self.geeEm', 'grimlock1, removed your alias for smackdown'))
+        self.geeEm('VellumTalk', '.aliases grimlock1', 
+              ('self.geeEm', 'Aliases for grimlock1:   bitchslap=1000'))
+
+        # testobserved
+        self.geeEm('VellumTalk', '.gm', 
+              ('self.geeEm', r'GeeEm is now a GM and will observe private messages for session #testing'))
+        self.player('VellumTalk', '[stabtastic 20]', 
+           ('self.geeEm', r'self.player, you rolled: stabtastic 20 = \[20\] \(<Player>  \[stabtastic 20\]\)'),
+           ('self.player', r'Player, you rolled: stabtastic 20 = \[20\] \(observed\)')
+           )
+
+        # testobserverchange
+        self.geeEm("VellumTalk", '[stabtastic 20]',
+                ('self.geeEm', r'GeeEm, you rolled: stabtastic 20 = \[20\]$')
+              )
+
+        # testunobserved
+        self.player('VellumTalk', '[stabtastic 20]', 
+           ('self.player', r'Player, you rolled: stabtastic 20 = \[20\]$')
+           )
+
+        self.vt.userRenamed('Player', 'Superman')
+        testOneSet(testobserverchange, self.vt)
+        self.vt.userLeft('GeeEm', '#testing')
+        testOneSet(testunobserved, self.vt)
+
