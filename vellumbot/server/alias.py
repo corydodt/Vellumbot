@@ -72,8 +72,8 @@ def shortFormatAliases(user, aliases=aliases):
         formatted_aliases.append('%s=%s' % (formatted_key, value))
     return ', '.join(formatted_aliases)
 
-def resolve(actor, words, parsed_dice=None, temp_modifier=0, target=None):
-    rolled = getResult(actor, words, parsed_dice, temp_modifier, target=target)
+def resolve(actor, words, aliases=aliases, parsed_dice=None, temp_modifier=0, target=None):
+    rolled = getResult(actor, words, aliases, parsed_dice, temp_modifier, target=target)
     if rolled is None:
         return None
     else:
@@ -85,7 +85,7 @@ def callAliasHooks(words, user, rolled):
         hook(user, rolled)
 
 def getResult(actor, words, aliases=aliases, parsed_dice=None, temp_modifier=0, target=None):
-    """Return a list of dice results"""
+    """Return a list of dice result"""
     assert target is None # TODO
     parse = diceparser.parseDice
     unparse = lambda x: str(x[0])
