@@ -1,17 +1,13 @@
 """
 Vellum's face.  The bot that answers actions in the channel.
 """
-# system imports
-import sys
-import re
-
 # twisted imports
 from twisted.words.protocols import irc
 from twisted.internet import reactor, protocol, task
 from twisted.python import log
 
 
-from vellumbot.server import linesyntax, d20session, alias
+from vellumbot.server import linesyntax, d20session
 
 
 class VellumTalk(irc.IRCClient):
