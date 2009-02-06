@@ -1,4 +1,5 @@
 import unittest
+import re
 
 from twisted.internet import protocol
 from twisted.words.test.test_irc import StringIOWithoutClosing
@@ -158,17 +159,14 @@ class IRCTestCase(unittest.TestCase):
            )
 
         # testobserverchange
+        self.vt.userRenamed('Player', 'Superman')
         self.geeEm("VellumTalk", '[stabtastic 20]',
                 ('self.geeEm', r'GeeEm, you rolled: stabtastic 20 = \[20\]$')
               )
 
         # testunobserved
+        self.vt.userLeft('GeeEm', '#testing')
         self.player('VellumTalk', '[stabtastic 20]', 
            ('self.player', r'Player, you rolled: stabtastic 20 = \[20\]$')
            )
-
-        self.vt.userRenamed('Player', 'Superman')
-        testOneSet(testobserverchange, self.vt)
-        self.vt.userLeft('GeeEm', '#testing')
-        testOneSet(testunobserved, self.vt)
 
