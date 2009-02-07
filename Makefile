@@ -11,3 +11,7 @@ buildable:
 	cd ..; cp -a Vellumbot $(PNAME); \
 			cd $(PNAME)/; hg purge --all; rm -rf .hg; \
 			cd ..; tar cvfz $(PNAME).tar.gz $(PNAME)/
+
+tests:
+	@if ! which trial >/dev/null 2>&1;then echo "** Install Twisted" 1>&2;  exit 1; fi
+	trial vellumbot.test
