@@ -5,7 +5,7 @@ from sets import Set
 
 from twisted.python import log
 
-from vellumbot.server import gametime, alias
+from vellumbot.server import alias
 from vellumbot.server.fs import fs
 import vellumbot
 
@@ -43,8 +43,6 @@ class Session:
         self.nicks = Set() # TODO - add a wrapper function for fixing bindings
                            # when nicks are removed or added
         self.observers = Set()
-        self.clock = gametime.Clock()
-        # TODO - deserialize clock
 
     # responses to being hailed by a user
     def respondTo_DEFAULT(self, user, args):
