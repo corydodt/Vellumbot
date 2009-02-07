@@ -1,4 +1,48 @@
-[_] Launchpad project
-[_] 'make website' target
+Launchpad project
 
+'make website' target
 
+Init bugs and needs
+
+    MFen can [init] twice 
+
+    No way to remove an init from combat upon death.. maybe .x mfen ?
+
+    No way to end combat, no count of rounds
+
+    Doesn't tell you when two players are simultaneous (should print both at
+    once)
+
+Goonmill integration
+
+    .goonmill <search terms> should download stats from goonmill - or goonmill
+    plugin?
+    
+Maptool integration
+
+    use tightvnc and run maptool online
+
+D20SRD integration
+
+    particularly .spell but also
+    .skill
+    .feat
+
+Dice rolling
+
+    still a little clunky.  Would like to eliminate all of the syntax except
+    dice expressions and instead use search to recall actions.  Example:
+
+    Joe> I shoot the grimlock with my bow. 1d20+8 1d6+6
+    VellumTalk>> [1d20+8]
+    VellumTalk>> [1d6+6]
+    Ted> I shoot him too. 1d20+1
+    VellumTalk>> [1d20+1]
+    Joe> I shoot** the grimlock again
+    VellumTalk>> [1d20+8]
+    VellumTalk>> [1d6+6]
+
+    VellumTalk searches Joe's chat history for the word shoot, and rerolls any
+    dice on the line that it finds.  It does *not* use Ted's rolls.
+
+.. vim:set ft=rst:
