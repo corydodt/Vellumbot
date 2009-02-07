@@ -86,7 +86,7 @@ def callAliasHooks(words, user, rolled):
 
 def getResult(actor, words, aliases=aliases, parsed_dice=None, temp_modifier=0, target=None):
     """Return a list of dice result"""
-    assert target is None # TODO
+    # targets - TODO
     parse = diceparser.parseDice
     unparse = lambda x: str(x)
 

@@ -139,8 +139,7 @@ class Session:
                 if formatted is not None:
                     strings.append(formatted)
             else:
-                for item in sentence.targets:
-                    target = item.target
+                for target in sentence.targets:
                     verbs = tuple(vp.nonDiceWords.split() or ())
                     formatted = alias.resolve(actor,
                                               verbs,

@@ -135,10 +135,12 @@ class IRCTestCase(unittest.TestCase, util.DiffTestCaseMixin):
               ('#testing', r'GeeEm, you rolled: foobar 30 = [30]'))
         self.geeEm('#testing',  '[argh +1]', 
               ('#testing', r'GeeEm, you rolled: argh +1 = [20+1 = 21]'))
+        self.geeEm('#testing',  'I will [kill 20] them @all', 
+              ('#testing', r'GeeEm, you rolled: kill 20 = [20]'))
         self.geeEm('VellumTalk', '.unalias init', 
               ('GeeEm', r'GeeEm, removed your alias for init'))
         self.geeEm('VellumTalk', '.aliases', 
-              ('GeeEm', r'Aliases for GeeEm:   argh=20, foobar=30'))
+              ('GeeEm', r'Aliases for GeeEm:   argh=20, foobar=30, kill=20'))
 
         # testhijack
         self.geeEm('VellumTalk', '*grimlock1 does a [smackdown 1000]', 
