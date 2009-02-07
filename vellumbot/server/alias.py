@@ -88,10 +88,10 @@ def getResult(actor, words, aliases=aliases, parsed_dice=None, temp_modifier=0, 
     """Return a list of dice result"""
     assert target is None # TODO
     parse = diceparser.parseDice
-    unparse = lambda x: str(x[0])
+    unparse = lambda x: str(x)
 
     # verb phrases with dice expressions set a new expression
-    if parsed_dice:
+    if parsed_dice is not None:
         aliases.setdefault(actor, {})[words] = unparse(parsed_dice)
         saveAliases()
     else: # without dice expression, look it up or regard it as empty
@@ -123,9 +123,9 @@ def formatAlias(actor,
     if parsed_dice is None or parsed_dice == '':
         pass
     else:
-        verbs.append(str(parsed_dice[0]))
+        verbs.append(str(parsed_dice))
         # use 'sort' token to decide whether to sort now
-        if parsed_dice[0].sort:
+        if parsed_dice.sort:
             results.sort()
             sorted = 1
     if temp_modifier:

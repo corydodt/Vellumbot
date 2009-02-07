@@ -241,7 +241,7 @@ class VerbPhraseProcessor(disp.DispatchProcessor):
         self.verbPhrase = VerbPhrase()
 
     def diceExpression(self, (t,s1,s2,sub), buffer):
-        self.verbPhrase.diceExpression = diceparser.parseDice(buffer[s1:s2])[0]
+        self.verbPhrase.diceExpression = diceparser.parseDice(buffer[s1:s2])
 
     def nonDiceWords(self, (t,s1,s2,sub), buffer):
         b = buffer[s1:s2]
