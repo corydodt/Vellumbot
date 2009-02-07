@@ -20,4 +20,4 @@ I also understand "npc hijacking".
     <GeeEm> With a snarl, *grimlock1 takes a [bite 1d20+2] out of crime.
     <VellumTalk> grimlock1, you rolled bite 1d20+2 = [9+2 = 11]
 
-. . . http://vellum.berlios.de
+. . . http://goonmill.org/vellumbot/
