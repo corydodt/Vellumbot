@@ -112,6 +112,8 @@ class IRCTestCase(unittest.TestCase, util.DiffTestCaseMixin):
         self.geeEm('#testing', '.hello', ('#testing', r'Hello GeeEm.'))
         self.geeEm('VellumTalk', '.inits', ('GeeEm', r'Initiative list: (none)'))
         self.geeEm('VellumTalk', '.combat', ('GeeEm', r'** Beginning combat **'))
+        self.geeEm('#testing', '[4d1+2]', 
+              ('#testing', r'GeeEm, you rolled: 4d1+2 = [1+1+1+1+2 = 6]'))
         self.geeEm('#testing', '[init 20]', 
               ('#testing', r'GeeEm, you rolled: init 20 = [20]'))
         self.geeEm('VellumTalk', '.n', ('GeeEm', r'++ New round ++'))

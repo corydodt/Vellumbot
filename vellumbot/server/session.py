@@ -130,8 +130,11 @@ class Session:
 
         strings = []
         for vp in sentence.verbPhrases:
+            if vp.nonDiceWords is None:
+                verbs = ()
+            else:
+                verbs = tuple(vp.nonDiceWords.split())
             if len(sentence.targets) == 0:
-                verbs = tuple(vp.nonDiceWords.split() or ())
                 formatted = alias.resolve(actor,    
                                           verbs,
                                           parsed_dice=vp.diceExpression,
@@ -140,7 +143,6 @@ class Session:
                     strings.append(formatted)
             else:
                 for target in sentence.targets:
-                    verbs = tuple(vp.nonDiceWords.split() or ())
                     formatted = alias.resolve(actor,
                                               verbs,
                                               parsed_dice=vp.diceExpression,

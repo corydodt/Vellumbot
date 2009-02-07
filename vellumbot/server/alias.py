@@ -46,9 +46,9 @@ def registerAliasHook(alias, hook):
     """Register a handler for a particular alias.  Handlers must
     take two arguments, username and evaluated result.
 
-    def rememberInitiative(user, initroll):
-        iniatives.append((initroll, user))
-    >>> addAliasHook(('init',), rememberInitiative)
+    # def rememberInitiative(user, initroll):
+    #     iniatives.append((initroll, user))
+    # >>> addAliasHook(('init',), rememberInitiative)
 
     Now rememberInitiative will get called any time someone uses "[init ..]"
     """
@@ -92,8 +92,9 @@ def getResult(actor, words, aliases=aliases, parsed_dice=None, temp_modifier=0, 
 
     # verb phrases with dice expressions set a new expression
     if parsed_dice is not None:
-        aliases.setdefault(actor, {})[words] = unparse(parsed_dice)
-        saveAliases()
+        if words:
+            aliases.setdefault(actor, {})[words] = unparse(parsed_dice)
+            saveAliases()
     else: # without dice expression, look it up or regard it as empty
         _dict = aliases.get(actor, {})
         looked_up = _dict.get(words, None)
