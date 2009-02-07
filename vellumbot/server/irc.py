@@ -8,6 +8,7 @@ from twisted.python import log
 
 
 from vellumbot.server import linesyntax, d20session
+import vellumbot.server
 
 
 class VellumTalk(irc.IRCClient):
@@ -61,7 +62,11 @@ class VellumTalk(irc.IRCClient):
         send = lambda line: self.msg(channel, line)
         send(lines[0])
         for n, line in enumerate(lines[1:]):
-            reactor.callLater(n*(delay/1000.0), send, line)
+            from . import irc as myself
+            if getattr(myself, 'TESTING', False):
+                send(line)
+            else:
+                reactor.callLater(n*(delay/1000.0), send, line)
 
     def sendResponse(self, response):
         if response is None:
@@ -72,7 +77,6 @@ class VellumTalk(irc.IRCClient):
             if channel in _already:
                 continue
 
-            print text
             splittext = text.splitlines()
             if len(splittext) > 1:
                 self.msgSlowly(channel, splittext)
@@ -168,18 +172,26 @@ class VellumTalk(irc.IRCClient):
 
         session = self.findSession(channel)
 
-        parsed = linesyntax.parseSentence(msg)
-        if parsed.command:
+        try:
+            sentence = linesyntax.parseSentence(msg)
+        except RuntimeError:
+            return
+
+        if sentence.command:
+            # ignore people talking to other people
+            if sentence.botName is not None and sentence.botName != self.nickname.lower():
+                return
+
             if channel == user:
-                response = session.privateCommand(user, parsed.command)
+                response = session.privateCommand(user, sentence)
             else:
-                response = session.command(user, parsed.command)
+                response = session.command(user, sentence)
             self.sendResponse(response)
-        elif parsed.verbPhrases:
+        elif sentence.verbPhrases:
             if channel == user:
-                response = session.privateInteraction(user, msg, parsed)
+                response = session.privateInteraction(user, msg, sentence)
             else:
-                response = session.interaction(user, msg, parsed)
+                response = session.interaction(user, msg, sentence)
             self.sendResponse(response)
         else:
             pass
