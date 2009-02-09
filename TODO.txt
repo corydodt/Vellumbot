@@ -2,6 +2,8 @@ Launchpad project
 
 'make website' target
 
+Thorough logging, and .mark
+
 Init bugs and needs
 
     MFen can [init] twice 
