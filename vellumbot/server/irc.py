@@ -214,7 +214,6 @@ class VellumTalkFactory(protocol.ClientFactory):
         self.channel = channel
         # no protocol.ClientFactory.__init__ to call
 
-
     def clientConnectionLost(self, connector, reason):
         """If we get disconnected, reconnect to server."""
         connector.connect()
