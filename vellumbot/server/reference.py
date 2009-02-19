@@ -14,15 +14,17 @@ import hypy
 def openIndex(filename):
     estdb = hypy.HDatabase()
     estdb.open(fs.hypy('.'), 'r')
-    yield estdb
-    estdb.close()
+    try:
+        yield estdb
+    finally:
+        estdb.close()
 
 DOMAINS = {'monster': query.Monster,
         'spell': query.Spell,
         }
 
 
-def lookup(domain, terms, max=5):
+def find(domain, terms, max=5):
     """
     Return either a list of teasers for the hits (up to max) or, if there is
     an exact match, the one-line description for that one
