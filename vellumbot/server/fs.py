@@ -8,7 +8,7 @@ if not os.path.isfile(__file__):
 
 
 fs = Filesystem(os.getcwd())
-fs.images = fs.new("vellumbot/images", mkdir=1)
 fs.aliases = fs.new("vellumbot/aliases", mkdir=1)
+fs.hypy = fs.new('vellumbot/srd35-index', mkdir=1)
 fs.help = fs("vellumbot/help.txt")
-fs.maps = fs.new("vellumbot/maps", mkdir=1)
+

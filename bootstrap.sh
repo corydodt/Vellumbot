@@ -41,6 +41,7 @@ function testPython()
 
 testPython "PySQLite2" 'import pysqlite2.dbapi2'
 testPython "Playtools" 'import playtools'
+testPython "Goonmill" 'import goonmill'
 testPython "Storm" 'import storm.locals'
 testPython "zope.interface" 'import zope.interface'
 t="from twisted import __version__ as v; assert v>='2.5.0', 'Have %s' % (v,)"
@@ -58,6 +59,7 @@ if [ -n "$force" ]; then
     echo ':: force is in effect: removing database files!'
     set -x
     rm -f vellumbot/user.db*
+    rm -rf vellumbot/srd35-index/_idx
     set +x
 fi
 
@@ -74,6 +76,22 @@ else
     echo :: If you have already run bootstrap.sh once, this is not an error.
     echo ::
 fi
+
+estraierindex=vellumbot/srd35-index/_idx
+if [ ! -d "$estraierindex" ]; then
+    idir=vellumbot/srd35-index
+    echo ::
+    echo :: $idir
+    mkdir -p $idir
+    python -m goonmill.search --build-index --index-dir=$idir
+    echo
+else
+    echo "** ${estraierindex} already exists, not willing to overwrite it!"
+    echo ::
+    echo :: If you have already run bootstrap.sh once, this is not an error.
+    echo ::
+fi
+
 
 echo ::
 echo :: Done.
