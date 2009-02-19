@@ -35,21 +35,8 @@ class ResponseTest:
             rcpts = sorted(self.recipients)
             expected = ['PRIVMSG %s :%s' % (targ,exp) for targ,exp in rcpts]
             actual = sorted(actual.splitlines())
-            testcase.failIfDiff(actual, expected, 'actual', 'expected')
-            return
-            for _line in actual.splitlines():
-                for target, expected in self.recipients:
-                    pattern = 'PRIVMSG %s :%s' % (re.escape(target), 
-                                                  expected)
-                    # remove a recipient each time a line is found
-                    # matching a line that was expected
-                    if re.match(pattern, _line):
-                        self.satisfy(target, expected)
-                # pass when there are no recipients left to satisfy
-                if len(self.recipients) == 0:
-                    return True
-            else:
-                assert 0, "you fail"
+            for ac, ex in zip(actual, expected):
+                testcase.failIfRxDiff(ex, ac, 'expected (regex)', 'actual')
         return True #?
 
     def satisfy(self, target, expected):
@@ -104,24 +91,26 @@ class IRCTestCase(unittest.TestCase, util.DiffTestCaseMixin):
         vellumbot.server.irc.TESTING = True
         self.geeEm('VellumTalk', 'hello')
         self.geeEm('VellumTalk', 'OtherGuy: hello')
-        self.geeEm('VellumTalk', 'VellumTalk: hello', ('GeeEm', r'Hello GeeEm.'))
-        self.geeEm('VellumTalk', 'Vellumtalk: hello there', ('GeeEm', r'Hello GeeEm.'))
-        self.geeEm('VellumTalk', '.hello', ('GeeEm', r'Hello GeeEm.'))
+        self.geeEm('VellumTalk', 'VellumTalk: hello', ('GeeEm', r'Hello GeeEm\.'))
+        self.geeEm('VellumTalk', 'Vellumtalk: hello there', 
+            ('GeeEm', r'Hello GeeEm\.'))
+        self.geeEm('VellumTalk', '.hello', ('GeeEm', r'Hello GeeEm\.'))
         self.geeEm('#testing', 'hello',)
-        self.geeEm('#testing', 'VellumTalk: hello', ('#testing', r'Hello GeeEm.'))
-        self.geeEm('#testing', '.hello', ('#testing', r'Hello GeeEm.'))
-        self.geeEm('VellumTalk', '.inits', ('GeeEm', r'Initiative list: (none)'))
-        self.geeEm('VellumTalk', '.combat', ('GeeEm', r'** Beginning combat **'))
+        self.geeEm('#testing', 'VellumTalk: hello', ('#testing', r'Hello GeeEm\.'))
+        self.geeEm('#testing', '.hello', ('#testing', r'Hello GeeEm\.'))
+        self.geeEm('VellumTalk', '.inits', ('GeeEm', r'Initiative list: \(none\)'))
+        self.geeEm('VellumTalk', '.combat', 
+            ('GeeEm', r'\*\* Beginning combat \*\*'))
         self.geeEm('#testing', '[4d1+2]', 
-              ('#testing', r'GeeEm, you rolled: 4d1+2 = [1+1+1+1+2 = 6]'))
+              ('#testing', r'GeeEm, you rolled: 4d1\+2 = \[1\+1\+1\+1\+2 = 6\]'))
         self.geeEm('#testing', '[init 20]', 
-              ('#testing', r'GeeEm, you rolled: init 20 = [20]'))
-        self.geeEm('VellumTalk', '.n', ('GeeEm', r'++ New round ++'))
+              ('#testing', r'GeeEm, you rolled: init 20 = \[20\]'))
+        self.geeEm('VellumTalk', '.n', ('GeeEm', r'\+\+ New round \+\+'))
         self.geeEm('VellumTalk', '.n', 
-              ('GeeEm', r'GeeEm (init 20) is ready to act . . .'))
-        self.geeEm('VellumTalk', '.p', ('GeeEm', r'++ New round ++'))
+              ('GeeEm', r'GeeEm \(init 20\) is ready to act \. \. \.'))
+        self.geeEm('VellumTalk', '.p', ('GeeEm', r'\+\+ New round \+\+'))
         self.geeEm('VellumTalk', '.p', 
-              ('GeeEm', r'GeeEm (init 20) is ready to act . . .'))
+              ('GeeEm', r'GeeEm \(init 20\) is ready to act \. \. \.'))
         self.geeEm('VellumTalk', '.inits', 
               ('GeeEm', r'Initiative list: GeeEm/20, NEW ROUND/9999'))
         # self.geeEm('VellumTalk', '.help', ('GeeEm', r's+hello: Greet.')), FIXME
@@ -129,16 +118,17 @@ class IRCTestCase(unittest.TestCase, util.DiffTestCaseMixin):
         self.geeEm('VellumTalk', '.aliases GeeEm', 
               ('GeeEm', r'Aliases for GeeEm:   init=20'))
         self.geeEm('VellumTalk', '.aliases GeeEm Player',   
-               ('GeeEm', 'Aliases for GeeEm:   init=20'), ('GeeEm', 'Aliases for Player:   (none)'))
+               ('GeeEm', 'Aliases for GeeEm:   init=20'), 
+               ('GeeEm', 'Aliases for Player:   \(none\)'))
         self.geeEm('VellumTalk', '.unalias foobar', 
-              ('GeeEm', r'** No alias "foobar" for GeeEm'))
+              ('GeeEm', r'\*\* No alias "foobar" for GeeEm'))
         self.geeEm('#testing',  'hello [argh 20] [foobar 30]', 
-              ('#testing', r'GeeEm, you rolled: argh 20 = [20]'),
-              ('#testing', r'GeeEm, you rolled: foobar 30 = [30]'))
+              ('#testing', r'GeeEm, you rolled: argh 20 = \[20\]'),
+              ('#testing', r'GeeEm, you rolled: foobar 30 = \[30\]'))
         self.geeEm('#testing',  '[argh +1]', 
-              ('#testing', r'GeeEm, you rolled: argh +1 = [20+1 = 21]'))
+              ('#testing', r'GeeEm, you rolled: argh \+1 = \[20\+1 = 21\]'))
         self.geeEm('#testing',  'I will [kill 20] them @all', 
-              ('#testing', r'GeeEm, you rolled: kill 20 = [20]'))
+              ('#testing', r'GeeEm, you rolled: kill 20 = \[20\]'))
         self.geeEm('VellumTalk', '.unalias init', 
               ('GeeEm', r'GeeEm, removed your alias for init'))
         self.geeEm('VellumTalk', '.aliases', 
@@ -146,11 +136,11 @@ class IRCTestCase(unittest.TestCase, util.DiffTestCaseMixin):
 
         # testhijack
         self.geeEm('VellumTalk', '*grimlock1 does a [smackdown 1000]', 
-              ('GeeEm', 'grimlock1, you rolled: smackdown 1000 = [1000]'))
+              ('GeeEm', 'grimlock1, you rolled: smackdown 1000 = \[1000\]'))
         self.geeEm('#testing', '*grimlock1 does a [bitchslap 1000]', 
-              ('#testing', 'grimlock1, you rolled: bitchslap 1000 = [1000]'))
+              ('#testing', 'grimlock1, you rolled: bitchslap 1000 = \[1000\]'))
         self.geeEm('VellumTalk', '*grimlock1 does a [smackdown]', 
-              ('GeeEm', 'grimlock1, you rolled: smackdown = [1000]'))
+              ('GeeEm', 'grimlock1, you rolled: smackdown = \[1000\]'))
         self.geeEm('VellumTalk', 'I do a [smackdown]')
         self.geeEm('VellumTalk', '.aliases grimlock1', 
               ('GeeEm', 'Aliases for grimlock1:   bitchslap=1000, smackdown=1000'))
@@ -163,19 +153,19 @@ class IRCTestCase(unittest.TestCase, util.DiffTestCaseMixin):
         self.geeEm('VellumTalk', '.gm', 
               ('GeeEm', r'GeeEm is now a GM and will observe private messages for session #testing'))
         self.player('VellumTalk', '[stabtastic 20]', 
-           ('GeeEm', r'Player, you rolled: stabtastic 20 = [20] (<Player>  [stabtastic 20])'),
-           ('Player', r'Player, you rolled: stabtastic 20 = [20] (observed)')
+           ('GeeEm', r'Player, you rolled: stabtastic 20 = \[20\] \(<Player>  \[stabtastic 20\]\)'),
+           ('Player', r'Player, you rolled: stabtastic 20 = \[20\] \(observed\)')
            )
 
         # testobserverchange
         self.vt.userRenamed('Player', 'Superman')
         self.geeEm("VellumTalk", '[stabtastic 20]',
-                ('GeeEm', r'GeeEm, you rolled: stabtastic 20 = [20]')
+                ('GeeEm', r'GeeEm, you rolled: stabtastic 20 = \[20\]')
               )
 
         # testunobserved
         self.vt.userLeft('GeeEm', '#testing')
         self.player('VellumTalk', '[stabtastic 20]', 
-           ('Player', r'Player, you rolled: stabtastic 20 = [20]')
+           ('Player', r'Player, you rolled: stabtastic 20 = \[20\]')
            )
 
