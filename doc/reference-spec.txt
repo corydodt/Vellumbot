@@ -1,0 +1,113 @@
+=============================
+Reference search in Vellumbot
+=============================
+
+This is a feature of vellumbot that allows a user to request a spell, skill,
+feat, item, class, or race lookup right in IRC.  The user must use a command
+such as .lookup and name a specific search domain, such as "spell", and the
+interface will return the referenced item, using fulltext search to find it.
+
+Specification
+=============
+
+Typical Session
+---------------
+
+Notation
+~~~~~~~~
+
+:``User       ##>``: a human user, speaking in channel
+
+:``Vellumbot  ##>``: the bot, speaking in channel
+
+:``User       pm>``: a human user, speaking to the bot in private message
+
+:``Vellumbot  pm>``: the bot, replying to the last human user who spoke
+
+::
+
+  1     CromGrum   ##> .hello
+  2     Vellumbot  ##> CromGrum, hello.
+  3     CromGrum   ##> .lookup spell cure
+  4     Vellumbot  pm> "cure light wounds mass": **Cure** Light Wounds, Mass
+                       Conjuration ...  positive energy to **cure** 1d8 points
+                       of damag ...  reature. Like other **cure** spells, mass
+                       **cure** l ...
+  5     Vellumbot  pm> "cure minor wounds": **Cure** Minor Wounds Conjuration
+                       (Heal ... pell functions like **cure** light wounds ,
+                       exce ... pt that it **cure**s only 1 point of da ...
+  6     Vellumbot  pm> "cure critical wounds": **Cure** Critical Wounds
+                       Conjuration (H ... pell functions like **cure** light
+                       wounds , exce ... pt that it **cure**s 4d8 points of
+                       dama ...
+  7     Vellumbot  pm> "cure critical wounds mass": **Cure** Critical Wounds,
+                       Mass Conjurat ... functions like mass **cure** light
+                       wounds , exce ... pt that it **cure**s 4d8 points of
+                       dama ...
+  8     Vellumbot  pm> "cure moderate wounds mass": **Cure** Moderate Wounds,
+                       Mass Conjurat ... functions like mass **cure** light
+                       wounds , exce ... pt that it **cure**s 2d8 points of
+                       dama ...
+
+  9-13  Vellumbot  pm> (all of the above is also echoed to any observer GMs in
+                        more pms)
+
+  14    Vellumbot  ##> Replied to CromGrum with top 5 matches for SPELL "cure"
+  15    CromGrum   ##> .lookup spell cure serious wounds
+  16    Vellumbot  ##> CromGrum: SPELL <<Cure Serious Wounds>> Conjuration
+                       (Healing) || LevelBard 3, Cleric 3, Druid 4, Paladin 4,
+                       Ranger 4, Healing 3 This spell functions like cure light
+                       wounds , except that it cures 3d8 points of damage +1
+                       point per caster level (maximum +15).
+  17    CromGrum   ##> .lookup spell wenis
+  18    Vellumbot  ##> CromGrum: No SPELL contains "wenis".  Try searching with
+                       a wildcard e.g. .lookup spell wenis*
+  19    CromGrum   ##> .lookup spell wenis*
+  20    Vellumbot  ##> CromGrum: No SPELL contains "wenis*".
+  21    CromGrum   ##> .lookup spell heal*
+
+  22-26 Vellumbot  pm> (bot responds with top 5 matches to CromGrum in pms)
+
+  27-31 Vellumbot  pm> (bot echoes to observer GMs in pms)
+
+  32    Vellumbot  ##> Replied to CromGrum with top 5 matches for SPELL "heal*"
+
+On line 3 CromGrum does the first search, which is not an exact match for
+any spell.  As a result, the bot reports inexact matches to the requesting
+user.
+
+The general rule that Vellumbot follows, as in all other interactions, is to
+"respond in kind" - that is, try to reply using the same conversational
+context as it was queried.  If asked in a channel, it will respond in a
+channel.  If asked in pm, it will respond with a pm.  In addition, as usual,
+PMs to players will be echoed to the GM.
+
+The requirements of search introduce a new behavior, though: for search
+results (and only search results), the bot will respond with a private message
+of the teaser texts if there are no exact matches (lines 4-8).
+
+On lines 9-13, the same messages are also sent to the observer GM.
+
+On line 14, the bot *does* "respond in kind", but only with the message that
+it did a search, for the benefit of the others in the channel.  This message
+would be sent via priate message if the user had made the request over private
+message.
+
+On line 15 CromGrum does another search.  This time there is an exact match.
+
+On line 16, the bot responds with the brief description and metadata of the
+spell which was an exact match.
+
+Lines 17-18, are the result of a search with no matches, where the user did
+not try to use a wildcard.  In this case the bot suggests using a wildcard.
+
+Lines 19-20 are another search with no matches; CromGrum used a wildcard so
+the bot does not suggest using one.
+
+Line 21 shows CromGrum doing a search where the word part of the search is
+an exact match for the spell, but he wants more results.  If he searched for
+"heal" only, the bot would reply with the definition of Heal, so he has to add
+a wildcard to get more results (lines 22-32).
+
+
+.. vim:ft=rst:
