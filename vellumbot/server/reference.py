@@ -19,9 +19,18 @@ def openIndex(filename):
     finally:
         estdb.close()
 
-DOMAINS = {'monster': query.Monster,
-        'spell': query.Spell,
+DOMAINS = {
+        u'monster': query.Monster,
+        u'spell': query.Spell,
         }
+
+def lookup(id, domain):
+    """
+    Get the database-backed Thing which corresponds to the domain and altname,
+    mapping through DOMAINS to get the Thing's class as understood by
+    goonmill.query
+    """
+    return query.lookup(id, DOMAINS[domain])
 
 
 def find(domain, terms, max=5):
@@ -35,7 +44,8 @@ def find(domain, terms, max=5):
         normTerms = ' '.join(terms).lower()
         for look in looked:
             if look[u'altname'] == normTerms:
-                thing = query.lookup(look[u'altname'], DOMAINS[domain])
+                _ignored_domain, id = look[u'@uri'].split(u'/')
+                thing = lookup(int(id), domain)
                 if thing:
                     return [thing.oneLineDescription()]
             ret.append('"%s": %s' % (look[u'altname'], look.teaser(terms,
