@@ -8,7 +8,17 @@ from twisted.python import log
 
 
 from vellumbot.server import linesyntax, d20session
-import vellumbot.server
+
+
+class Request(object):
+    """
+    The state object for privmsgs that are made on the bot
+    """
+    def __init__(self, user, channel, message):
+        self.user = user
+        self.channel = channel
+        self.message = message
+        self.sentence = None
 
 
 class VellumTalk(irc.IRCClient):
@@ -22,7 +32,8 @@ class VellumTalk(irc.IRCClient):
     def __init__(self, *args, **kwargs):
         self.wtf = 0  # number of times a "wtf" has occurred recently.
         # reset wtf's every 30 seconds 
-        self.resetter = task.LoopingCall(self._resetWtfCount).start(30.0)
+        self.resetter = task.LoopingCall(self._resetWtfCount)
+        self.resetter.start(30.0)
         self.sessions = []
         self.defaultSession = None
         # TODO - analyze, do i *really* need responding?
@@ -71,10 +82,10 @@ class VellumTalk(irc.IRCClient):
     def sendResponse(self, response):
         if response is None:
             return
-        _already = []
+        _already = {}
         for channel, text in response.getMessages():
             # don't send messages to any users twice
-            if channel in _already:
+            if (channel, text) in _already:
                 continue
 
             splittext = text.splitlines()
@@ -82,7 +93,7 @@ class VellumTalk(irc.IRCClient):
                 self.msgSlowly(channel, splittext)
             else:
                 self.msg(channel, text)
-            _already.append(channel)
+            _already[(channel, text)] = True
 
     # callbacks for irc events
     # callbacks for irc events
@@ -177,21 +188,24 @@ class VellumTalk(irc.IRCClient):
         except RuntimeError:
             return
 
+        req = Request(user, channel, msg)
+        req.sentence = sentence
+
         if sentence.command:
             # ignore people talking to other people
             if sentence.botName is not None and sentence.botName != self.nickname.lower():
                 return
 
             if channel == user:
-                response = session.privateCommand(user, sentence)
+                response = session.privateCommand(req)
             else:
-                response = session.command(user, sentence)
+                response = session.command(req)
             self.sendResponse(response)
         elif sentence.verbPhrases:
             if channel == user:
-                response = session.privateInteraction(user, msg, sentence)
+                response = session.privateInteraction(req)
             else:
-                response = session.interaction(user, msg, sentence)
+                response = session.interaction(req)
             self.sendResponse(response)
         else:
             pass

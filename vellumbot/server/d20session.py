@@ -1,12 +1,44 @@
 """Session subclass specific to D20 (inits etc.)"""
 
-from vellumbot.server import alias, session
+from vellumbot.server import alias, session, reference
 
 class D20Session(session.Session):
     def __init__(self, channel):
         session.Session.__init__(self, channel)
         self.initiatives = []
         alias.registerAliasHook(('init',), self.doInitiative)
+
+    def lookup_spell(self, req, terms):
+        """
+        Look up a spell and say what it is
+        """
+        ts = u' '.join(k.decode('utf-8') for k in terms)
+        looked = reference.find(u'spell', [ts])
+        if not looked:
+            if '*' in ts:
+                return '%s: No SPELL contains "%s".' % (req.user, ts,)
+            else:
+                return (
+                    '%s: No SPELL contains "%s".  Try searching with a wildcard e.g. .lookup spell %s*' % (
+                            req.user, ts, ts))
+        else:
+            if looked[0].startswith('<<'):
+                assert len(looked) == 1, "Exact match returned with %s hits?" % ( len(looked), )
+                return '%s: SPELL %s' % (req.user, looked[0])
+            else:
+                rg = session.ResponseGroup()
+
+                for line in looked:
+                    rg.addResponse(session.Response(line, req,
+                        redirectTo=req.user))
+
+                count = len(looked)
+                m = 'Replied to %s with top %s matches for SPELL "%s"' % (req.user, count, ts)
+
+                rg.addResponse([m, req])
+
+                return rg
+
 
     def respondTo_n(self, user, _):
         """Next initiative"""

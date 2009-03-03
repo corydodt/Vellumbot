@@ -1,25 +1,65 @@
 import sys
 import string
 import traceback
-from sets import Set
+
+from zope.interface import Interface, implements
 
 from twisted.python import log
 
 from vellumbot.server import alias
 from vellumbot.server.fs import fs
-import vellumbot
 
 
 class UnknownHailError(Exception):
     pass
 
+
+class ISessionResponse(Interface):
+    """
+    A source of messages to send to one or more channels, in response to a session
+    action.
+    """
+    def getMessages():
+        """
+        @returns the messages as a list of 2-tuples: (recipient, message)
+        """
+
+
+class ResponseGroup(object):
+    """
+    A response that is built of other responses
+    """
+    implements(ISessionResponse)
+    def __init__(self, *responses):
+        self.responses = []
+        for r in responses:
+            self.addResponse(r)
+
+    def addResponse(self, response):
+        if ISessionResponse.providedBy(response):
+            self.responses.append(response)
+        else:
+            self.responses.append(Response(*response))
+
+    def getMessages(self):
+        """
+        Recurse through my responses to return messages
+        """
+        ret = []
+        for res in self.responses:
+            for m in res.getMessages():
+                yield m
+
+
 class Response(object):
     """A response vector with the channels the response should be sent to"""
-    def __init__(self, text, context, channel, *channels):
+    implements(ISessionResponse)
+    def __init__(self, text, request, redirectTo=None):
         self.text = text
-        self.context = context
-        self.channel = channel
-        self.more_channels = channels
+        self.context = request.message
+        self.channel = request.recipients[0] 
+        self.more_channels = request.recipients[1:]
+        self.redirectTo = redirectTo
 
     def getMessages(self):
         """Generate messages to each channel"""
@@ -31,39 +71,59 @@ class Response(object):
         else:
             text = self.text
 
-        yield (self.channel, text)
+        if self.channel.startswith('#') and self.redirectTo is not None:
+            yield (self.redirectTo, text)
+        else:
+            yield (self.channel, text)
         for ch in self.more_channels:
             yield (ch, more_text)
 
+
 class Session:
+    """
+    A stateful channel, with game- and participant-specific knowledge that is
+    remembered from one message to the next.
+    """
     def __init__(self, channel):
         self.channel = channel
         # TODO - move this into d20-specific code somewhere
         self.initiatives = []
-        self.nicks = Set() # TODO - add a wrapper function for fixing bindings
+        self.nicks = set() # TODO - add a wrapper function for fixing bindings
                            # when nicks are removed or added
-        self.observers = Set()
+        self.observers = set()
 
     # responses to being hailed by a user
-    def respondTo_DEFAULT(self, user, args):
+    def respondTo_DEFAULT(self, request, args):
         raise UnknownHailError()
 
 
-    def respondTo_gm(self, user, _):
-        self.observers.add(user)
+    def respondTo_lookup(self, req, rest):
+        """
+        Set the speaker as the gm for this game session.
+        """
+        r = list(rest)
+        what = r.pop(0)
+        default = lambda u, r: "I don't know how to look those things up."
+        return getattr(self, 'lookup_%s' % (what,), default)(req, r)
+
+    def respondTo_gm(self, request, _):
+        """
+        Set the speaker as the gm for this game session.
+        """
+        self.observers.add(request.user)
         return ('%s is now a GM and will observe private '
-                'messages for session %s' % (user, self.channel,))
+                'messages for session %s' % (request.user, self.channel,))
 
-    def respondTo_hello(self, user, _):
-        """Greet."""
-        return 'Hello %s.' % (user,)
+    def respondTo_hello(self, request, _):
+        """Greet the speaker."""
+        return 'Hello %s.' % (request.user,)
 
-    def respondTo_aliases(self, user, characters):
+    def respondTo_aliases(self, request, characters):
         """
         Show aliases for a character or for myself
         """
         if len(characters) == 0:
-            characters.append(user)
+            characters.append(request.user)
         ret = []
         m = string.Template('Aliases for $char:   $formatted')
         for c in characters:
@@ -71,14 +131,14 @@ class Session:
             ret.append(m.safe_substitute(d))
         return '\n'.join(ret)
 
-    def respondTo_unalias(self, user, removes):
+    def respondTo_unalias(self, request, removes):
         """Remove an alias from a character: unalias [character] <alias>"""
         if len(removes) > 1:
             key = removes[1]
             character = removes[0]
         else:
             key = removes[0]
-            character = user
+            character = request.user
 
         removed = alias.removeAlias(key, character)
         if removed is not None:
@@ -86,7 +146,7 @@ class Session:
         else:
             return "** No alias \"%s\" for %s" % (key, character)
 
-    def respondTo_help(self, user, _):
+    def respondTo_help(self, request, _):
         """This drivel."""
         _commands = []
         commands = []
@@ -100,6 +160,7 @@ class Session:
         _d = {'commands': '\n    '.join(_commands), }
 
         response = file(fs.help).read() % _d
+        # TODO - don't ever send this to the channel
         return response
 
     def doInitiative(self, user, result):
@@ -111,30 +172,30 @@ class Session:
         """True if nick is part of this session."""
         return nick in self.nicks
 
-    def privateInteraction(self, user, msg, parsed):
+    def privateInteraction(self, request):
         # if user is one of self.observers, we don't want to send another
         # reply.  make a set of the two bundles to filter out dupes.
-        recipients = Set([user] + list(self.observers))
-        return self.doInteraction(user, msg, parsed, *recipients)
+        recipients = set([request.user] + list(self.observers))
+        return self.doInteraction(request, *recipients)
 
-    def interaction(self, user, msg, sentence):
-        return self.doInteraction(user, msg, sentence, self.channel)
+    def interaction(self, request):
+        return self.doInteraction(request, self.channel)
 
-    def doInteraction(self, user, msg, sentence, *recipients):
+    def doInteraction(self, request, *recipients):
         """Use actor's stats to apply each action to all targets"""
         assert recipients, "interaction with no recipients"
-        if sentence.actor:
-            actor = sentence.actor
+        if request.sentence.actor:
+            actor = request.sentence.actor
         else:
-            actor = user
+            actor = request.user
 
         strings = []
-        for vp in sentence.verbPhrases:
+        for vp in request.sentence.verbPhrases:
             if vp.nonDiceWords is None:
                 verbs = ()
             else:
                 verbs = tuple(vp.nonDiceWords.split())
-            if len(sentence.targets) == 0:
+            if len(request.sentence.targets) == 0:
                 formatted = alias.resolve(actor,    
                                           verbs,
                                           parsed_dice=vp.diceExpression,
@@ -142,7 +203,7 @@ class Session:
                 if formatted is not None:
                     strings.append(formatted)
             else:
-                for target in sentence.targets:
+                for target in request.sentence.targets:
                     formatted = alias.resolve(actor,
                                               verbs,
                                               parsed_dice=vp.diceExpression,
@@ -152,62 +213,64 @@ class Session:
                         strings.append(formatted)
         if strings:
             text = '\n'.join(strings)
-            return Response(text, msg, *recipients)
+            request.recipients = recipients
+            return Response(text, request)
 
-    def command(self, user, command):
+    def command(self, request):
         """Choose a method based on the command word, and pass args if any"""
-        return self.doCommand(user, command, self.channel)
+        request.recipients = [self.channel]
+        return self.doCommand(request)
 
-    def privateCommand(self, user, command):
-        return self.doCommand(user, command, user, *self.observers)
+    def privateCommand(self, request):
+        request.recipients = list(set([request.user] + list(self.observers)))
+        return self.doCommand(request)
 
-    def doCommand(self, user, command, *recipients):
+    def doCommand(self, request):
+        command = request.sentence.command
         m = self.getCommandMethod(command)
 
-        context = command
-
         try:
-            text = m(user, command.commandArgs)
-            return Response(text, context, *recipients)
+            response = m(request, request.sentence.commandArgs)
+            if ISessionResponse.providedBy(response):
+                return response
+            return Response(response, request)
         except UnknownHailError, e:
-            return Response("wtf?", context, *recipients)
+            return Response("wtf?", request)
         except Exception, e:
             log.msg(''.join(traceback.format_exception(*sys.exc_info())))
             from . import session as myself
             if getattr(myself, 'TESTING', True):
                 raise
-            text = '** Sorry, %s: %s' % (user, str(e))
-            return Response(text, context, *recipients)
+            text = '** Sorry, %s: %s' % (request.user, str(e))
+            return Response(text, request)
 
-    def getCommandMethod(self, sentence):
-        name = sentence.command
-        return getattr(self, 'respondTo_%s' % (name,),
+    def getCommandMethod(self, command):
+        return getattr(self, 'respondTo_%s' % (command,),
                        self.respondTo_DEFAULT)
 
     def addNick(self, *nicks):
-        self.nicks |= Set(nicks)
+        self.nicks |= set(nicks)
         return self.reportNicks('Added %s' % (str(nicks),))
 
     def removeNick(self, *nicks):
-        self.nicks ^= Set(nicks)
+        self.nicks ^= set(nicks)
         # also update self.observers
-        self.observers ^= Set(nicks)
+        self.observers ^= set(nicks)
         return self.reportNicks('Removed %s' % (str(nicks),))
 
     def reportNicks(self, why):
         nicks = ', '.join(self.nicks)
         return None # FIXME - very spammy when on
         return Response("Nicks in this session: %s" % (nicks,),
-                        why,
-                        self.channel)
+                        request)
 
     def rename(self, old, new):
-        self.nicks -= Set((old,))
-        self.nicks |= Set((new,))
+        self.nicks -= set((old,))
+        self.nicks |= set((new,))
         # also update self.observers
         if old in self.observers:
-            self.observers -= Set((old,))
-            self.observers |= Set((new,))
+            self.observers -= set((old,))
+            self.observers |= set((new,))
         # TODO - rename old's aliases so they work for new
         return self.reportNicks('%s renamed to %s' % (old, new))
 
