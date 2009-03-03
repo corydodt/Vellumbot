@@ -11,6 +11,14 @@ from . import util
 
 
 
+class ByteStringIOWithoutClosing(StringIOWithoutClosing):
+    def write(self, data):
+        # mimic real twisted's insistence on unicode
+        if isinstance(data, unicode): # no, really, I mean it
+            raise TypeError("Data must not be unicode")
+        return StringIOWithoutClosing.write(self, data)
+
+
 def formPrivMsg(*recipients):
     if recipients:
         r = ["PRIVMSG %s :%s" % (targ,exp) for targ,exp in recipients]
@@ -46,7 +54,6 @@ class ResponseTest:
         self.factory.pipe_pos = pipe.tell()
         return actual
 
-
     def check(self, testcase):
         actual = self.getActual()
         # sort the messages because we usually don't care about order (TODO -
@@ -78,7 +85,7 @@ class IRCTestCase(unittest.TestCase, util.DiffTestCaseMixin):
 
     def setUp(self):
         if self.factory is None:
-            pipe = StringIOWithoutClosing()
+            pipe = ByteStringIOWithoutClosing()
             self.factory = ResponseTestFactory(pipe)
 
         # TODO - move d20-specific tests, e.g. init and other alias hooks?

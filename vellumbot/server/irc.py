@@ -88,6 +88,10 @@ class VellumTalk(irc.IRCClient):
             if (channel, text) in _already:
                 continue
 
+            # twisted's abstract sockets insist that data be as byte strings.
+            if isinstance(text, unicode):
+                text = text.encode('utf-8')
+
             splittext = text.splitlines()
             if len(splittext) > 1:
                 self.msgSlowly(channel, splittext)
