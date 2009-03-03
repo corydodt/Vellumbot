@@ -12,14 +12,13 @@ Lines may contain the following syntax:
     - A target starts with @ and there may be more than one.
 """
 
-import string
-
 import re
 import shlex
 
 from simpleparse import parser, dispatchprocessor as disp
 from simpleparse.error import ParserSyntaxError
-from simpleparse.common import numbers
+from simpleparse.common import numbers # importing for side effect
+numbers # shut up pyflakes
 from playtools import diceparser
 
 grammar = ( # {{{
