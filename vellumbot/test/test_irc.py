@@ -166,6 +166,11 @@ class IRCTestCase(unittest.TestCase, util.DiffTestCaseMixin):
         expectations3.append(('#testing', 'Replied to Player with top 5 matches for SPELL "heal\*"'))
         self.player('#testing', '.lookup spell heal*', *expectations3)
 
+    def test_failedReference(self):
+        vellumbot.server.session.TESTING = True
+        vellumbot.server.irc.TESTING = True
+        self.player('#testing', '.lookup monster mohrg', 
+                ('#testing', 'I don\'t know how to look those things up.'))
 
     def test_everything(self):
         vellumbot.server.session.TESTING = True
