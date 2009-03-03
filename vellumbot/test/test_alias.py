@@ -67,6 +67,3 @@ class AliasTestCase(unittest.TestCase):
         self.assertEqual(alias.shortFormatAliases('empty', aliases), '(none)')
         self.assertEqual(alias.shortFormatAliases('NOBODY', aliases), '(none)')
 
-
-if __name__ == '__main__':
-    test()
