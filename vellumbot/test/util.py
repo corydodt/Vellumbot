@@ -46,6 +46,14 @@ class DiffTestCaseMixin(object):
         the first argument as the expression to match against the second
         expression.
         """
-        self.failIfDiff(first, second, fromfile, tofile, eq=re.match)
+        assert type(first) is type(second) is list
+        def eq(first, second):
+            if len(first) != len(second):
+                return False
+            for f, s in zip(first, second):
+                if re.match(f, s) is None:
+                    return False
+            return True
+        self.failIfDiff(first, second, fromfile, tofile, eq=eq)
 
     assertNoRxDiff = failIfRxDiff
