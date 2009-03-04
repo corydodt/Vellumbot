@@ -8,23 +8,23 @@ class D20Session(session.Session):
         self.initiatives = []
         alias.registerAliasHook(('init',), self.doInitiative)
 
-    def lookup_spell(self, req, terms):
-        """
-        Look up a spell and say what it is
-        """
+    def _lookup_anything(self, req, terms, domain):
+        assert type(domain) is unicode
+        UPPER = domain.upper()
+    
         ts = u' '.join(k.decode('utf-8') for k in terms)
-        looked = reference.find(u'spell', [ts])
+        looked = reference.find(domain, [ts])
         if not looked:
             if '*' in ts:
-                return '%s: No SPELL contains "%s".' % (req.user, ts,)
+                return '%s: No %s contains "%s".' % (req.user, UPPER, ts,)
             else:
                 return (
-                    '%s: No SPELL contains "%s".  Try searching with a wildcard e.g. .lookup spell %s*' % (
-                            req.user, ts, ts))
+                    '%s: No %s contains "%s".  Try searching with a wildcard e.g. .lookup %s %s*' % (
+                            req.user, UPPER, ts, domain, ts))
         else:
             if looked[0].startswith('<<'):
                 assert len(looked) == 1, "Exact match returned with %s hits?" % ( len(looked), )
-                return '%s: SPELL %s' % (req.user, looked[0])
+                return '%s: %s %s' % (req.user, UPPER, looked[0])
             else:
                 rg = session.ResponseGroup()
 
@@ -39,6 +39,18 @@ class D20Session(session.Session):
 
                 return rg
 
+
+    def lookup_monster(self, req, terms):
+        """
+        Look up a spell and say what it is
+        """
+        return self._lookup_anything(req, terms, u'monster')
+
+    def lookup_spell(self, req, terms):
+        """
+        Look up a spell and say what it is
+        """
+        return self._lookup_anything(req, terms, u'spell')
 
     def respondTo_n(self, user, _):
         """Next initiative"""
