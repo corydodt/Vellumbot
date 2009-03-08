@@ -2,21 +2,13 @@ from twisted.trial import unittest
 import re
 
 from twisted.internet import protocol
-from twisted.words.test.test_irc import StringIOWithoutClosing
+from twisted.test.proto_helpers import StringTransport
 
 from vellumbot.server import alias, d20session
 from vellumbot.server.irc import VellumTalk
 import vellumbot.server.session
 from . import util
 
-
-
-class ByteStringIOWithoutClosing(StringIOWithoutClosing):
-    def write(self, data):
-        # mimic real twisted's insistence on unicode
-        if isinstance(data, unicode): # no, really, I mean it
-            raise TypeError("Data must not be unicode")
-        return StringIOWithoutClosing.write(self, data)
 
 
 def formPrivMsg(*recipients):
@@ -30,29 +22,25 @@ NL = re.compile(r'\r?\n')
 
 class ResponseTest:
     """Notation for testing a response to a command."""
-    def __init__(self, factory, user, channel, sent, expectation):
+    def __init__(self, transport, user, channel, sent, *recipients):
         self.user = user
-        self.factory = factory
+        self.transport = transport
         self.channel = channel
         self.sent = sent
 
-        if isinstance(expectation, list):
-            expectation = '\n'.join(expectation)
-
-        self.expectation = expectation
+        self.expectation = formPrivMsg(*recipients)
 
         self.last_pos = 0
 
     def getActual(self):
         """
-        Pull the actual data from the pipe, and set the pipe state for next
-        time
+        Pull the actual data from the pipe
         """
-        pipe = self.factory.pipe
-        pipe.seek(self.factory.pipe_pos)
-        actual = pipe.read().strip()
-        self.factory.pipe_pos = pipe.tell()
-        return actual
+        ret = self.transport.value()[self.last_pos:].strip()
+        # wipe the text every time.
+        self.transport.clear()
+        self.last_pos = len(ret)
+        return ret
 
     def check(self, testcase):
         actual = self.getActual()
@@ -66,50 +54,31 @@ class ResponseTest:
         return True #?
 
 
-class ResponseTestFactory:
-    def __init__(self, pipe):
-        self.pipe = pipe
-        self.pipe_pos = 0
-
-    def next(self, user, channel, target, *recipients):
-        expectation = formPrivMsg(*recipients)
-        return ResponseTest(self,
-                            user,
-                            channel, 
-                            target, 
-                            expectation)
-
-
 class IRCTestCase(unittest.TestCase, util.DiffTestCaseMixin):
-    factory = None
 
     def setUp(self):
-        if self.factory is None:
-            pipe = ByteStringIOWithoutClosing()
-            self.factory = ResponseTestFactory(pipe)
-
         # TODO - move d20-specific tests, e.g. init and other alias hooks?
         # save off and clear alias.aliases, since it gets persisted # FIXME
         orig_aliases = alias.aliases
         alias.aliases = {}
 
-        transport = protocol.FileWrapper(pipe)
+        self.transport = StringTransport()
         vt = self.vt = VellumTalk()
         vt.performLogin = 0
         vt.joined("#testing")
         vt.defaultSession = d20session.D20Session('#testing')
-        vt.makeConnection(transport)
+        vt.makeConnection(self.transport)
 
     def tearDown(self):
         self.vt.resetter.stop()
 
     def geeEm(self, channel, target, *recipients):
-        r = self.factory.next('GeeEm', channel, target, *recipients)
+        r = ResponseTest(self.transport, 'GeeEm', channel, target, *recipients)
         self.vt.privmsg(r.user, r.channel, r.sent)
         r.check(self)
 
     def player(self, channel, target, *recipients):
-        r = self.factory.next('Player', channel, target, *recipients)
+        r = ResponseTest(self.transport, 'Player', channel, target, *recipients)
         self.vt.privmsg(r.user, r.channel, r.sent)
         r.check(self)
 
@@ -239,6 +208,7 @@ class IRCTestCase(unittest.TestCase, util.DiffTestCaseMixin):
         self.geeEm('VellumTalk', '.aliases grimlock1', 
               ('GeeEm', 'Aliases for grimlock1:   bitchslap=1000'))
 
+    def test_observers(self):
         # testobserved
         self.geeEm('VellumTalk', '.gm', 
               ('GeeEm', r'GeeEm is now a GM and will observe private messages for session #testing'))
