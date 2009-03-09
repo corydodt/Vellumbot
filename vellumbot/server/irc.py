@@ -41,9 +41,11 @@ class VellumTalk(irc.IRCClient):
         # no irc.IRCClient.__init__ to call
 
     def findSession(self, channel):
-        """Return the channel that matches channel, or the channel
-        that has channel (a nick) in its list of people
-        Otherwise return the defaultSession, usually indicating that someone
+        """
+        Return the channel that matches channel, or the channel that has
+        channel (a nick) in its list of people.
+
+        Otherwise, return the defaultSession, usually indicating that someone
         has /msg'd the bot and that person is not in a channel with the bot.
         """
         for session in self.sessions:
@@ -116,8 +118,9 @@ class VellumTalk(irc.IRCClient):
         self.join(self.factory.channel)
 
     def joined(self, channel):
-        """When the bot joins a channel, find or make a session
-        and start tracking who's in the session.
+        """
+        When the bot joins a channel, find or make a session and start
+        tracking who's in the session.
         """
         # find or make a session
         session = self.findSession(channel)
@@ -128,22 +131,38 @@ class VellumTalk(irc.IRCClient):
         self.responding = 1
 
     def left(self, channel):
+        """
+        When the bot parts a channel.
+        """
         session = self.findSession(channel)
         self.sessions.remove(session)
 
     def kickedFrom(self, channel, kicker, message):
+        """
+        Don't let the door hit the bot's ass on the way out.
+        """
         session = self.findSession(channel)
         self.sessions.remove(session)
 
     def userJoined(self, user, channel):
+        """
+        Some other person joins a channel the bot is already watching.
+        """
         session = self.findSession(channel)
         self.sendResponse(session.addNick(user))
 
     def userLeft(self, user, channel):
+        """
+        Some other person leaves a channel the bot is already watching.
+        """
         session = self.findSession(user)
         self.sendResponse(session.removeNick(user))
 
     def userQuit(self, user, quitmessage):
+        """
+        Some other person leaves a channel the bot is already watching (by
+        quitting).
+        """
         session = self.findSession(user)
         self.sendResponse(session.removeNick(user))
 
@@ -152,10 +171,18 @@ class VellumTalk(irc.IRCClient):
         self.sendResponse(session.removeNick(user))
 
     def userRenamed(self, old, new):
+        """
+        Some other person does a /nick change in a channel the bot is
+        watching.
+        """
         session = self.findSession(old)
         self.sendResponse(session.rename(old, new))
 
     def irc_RPL_NAMREPLY(self, prefix, (user, _, channel, names)):
+        """
+        After joining a channel, the irc server tells us who's there, this
+        gets called to keep track.
+        """
         nicks = names.split()
         for nick in nicks[:]:
             if nick[0] in '@+':
@@ -172,6 +199,9 @@ class VellumTalk(irc.IRCClient):
         log.msg('|||'.join((prefix, command, repr(params))))
 
     def irc_INVITE(self, prefix, (user, channel)):
+        """
+        Some nice person invited the bot to join a channel.  Do so.
+        """
         self.join(channel)
 
     def privmsg(self, user, channel, msg):
