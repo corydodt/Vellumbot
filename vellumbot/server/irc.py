@@ -15,10 +15,17 @@ class Request(object):
     The state object for privmsgs that are made on the bot
     """
     def __init__(self, user, channel, message):
-        self.user = user
-        self.channel = channel
+        self.user = user         # who spoke
+        self.channel = channel   # where the reply should go
         self.message = message
         self.sentence = None
+        self.recipients = None
+
+    def setRecipients(self, *recipients):
+        """
+        These people should get the message.
+        """
+        self.recipients = recipients
 
 
 class VellumTalk(irc.IRCClient):
@@ -40,7 +47,7 @@ class VellumTalk(irc.IRCClient):
         self.responding = 0 # don't start responding until i'm in a channel
         # no irc.IRCClient.__init__ to call
 
-    def findSession(self, channel):
+    def findSessions(self, channel):
         """
         Return the channel that matches channel, or the channel that has
         channel (a nick) in its list of people.
@@ -48,12 +55,15 @@ class VellumTalk(irc.IRCClient):
         Otherwise, return the defaultSession, usually indicating that someone
         has /msg'd the bot and that person is not in a channel with the bot.
         """
+        found = []
         for session in self.sessions:
             if channel == session.channel:
-                return session
+                found.append(session)
             if session.matchNick(channel):
-                return session
-        return self.defaultSession
+                found.append(session)
+        if found == []:
+            found = [self.defaultSession]
+        return found
 
     def _resetWtfCount(self):
         self.wtf = 0
@@ -123,7 +133,7 @@ class VellumTalk(irc.IRCClient):
         tracking who's in the session.
         """
         # find or make a session
-        session = self.findSession(channel)
+        session = self.findSessions(channel)[0]
         if session is self.defaultSession: # i.e., not found
             session = d20session.D20Session(channel)
             self.sessions.append(session)
@@ -134,28 +144,28 @@ class VellumTalk(irc.IRCClient):
         """
         When the bot parts a channel.
         """
-        session = self.findSession(channel)
+        session = self.findSessions(channel)[0]
         self.sessions.remove(session)
 
     def kickedFrom(self, channel, kicker, message):
         """
         Don't let the door hit the bot's ass on the way out.
         """
-        session = self.findSession(channel)
+        session = self.findSessions(channel)[0]
         self.sessions.remove(session)
 
     def userJoined(self, user, channel):
         """
         Some other person joins a channel the bot is already watching.
         """
-        session = self.findSession(channel)
+        session = self.findSessions(channel)[0]
         self.sendResponse(session.addNick(user))
 
     def userLeft(self, user, channel):
         """
         Some other person leaves a channel the bot is already watching.
         """
-        session = self.findSession(user)
+        session = self.findSessions(channel)[0]
         self.sendResponse(session.removeNick(user))
 
     def userQuit(self, user, quitmessage):
@@ -163,11 +173,12 @@ class VellumTalk(irc.IRCClient):
         Some other person leaves a channel the bot is already watching (by
         quitting).
         """
-        session = self.findSession(user)
-        self.sendResponse(session.removeNick(user))
+        sessions = self.findSessions(user)
+        for s in sessions:
+            self.sendResponse(s.removeNick(user))
 
     def userKicked(self, user, channel, kicker, kickmessage):
-        session = self.findSession(user)
+        session = self.findSessions(channel)[0]
         self.sendResponse(session.removeNick(user))
 
     def userRenamed(self, old, new):
@@ -175,8 +186,9 @@ class VellumTalk(irc.IRCClient):
         Some other person does a /nick change in a channel the bot is
         watching.
         """
-        session = self.findSession(old)
-        self.sendResponse(session.rename(old, new))
+        sessions = self.findSessions(old)
+        for s in sessions:
+            self.sendResponse(s.rename(old, new))
 
     def irc_RPL_NAMREPLY(self, prefix, (user, _, channel, names)):
         """
@@ -189,7 +201,7 @@ class VellumTalk(irc.IRCClient):
                 nicks.remove(nick)
                 nicks.append(nick[1:])
 
-        session = self.findSession(channel)
+        session = self.findSessions(channel)[0]
         self.sendResponse(session.addNick(*nicks))
 
     def irc_RPL_ENDOFNAMES(self, prefix, params):
@@ -212,17 +224,22 @@ class VellumTalk(irc.IRCClient):
             return
         # Check to see if they're sending me a private message
         # If so, the return channel is the user.
+        observers = []
         if channel == self.nickname:
-            channel = user
-
-        session = self.findSession(channel)
+            respondTo = user
+            session = self.defaultSession
+            for s in self.findSessions(user):
+                observers.extend(s.observers)
+        else:
+            respondTo = channel
+            session = self.findSessions(channel)[0]
 
         try:
             sentence = linesyntax.parseSentence(msg)
         except RuntimeError:
             return
 
-        req = Request(user, channel, msg)
+        req = Request(user, respondTo, msg)
         req.sentence = sentence
 
         if sentence.command:
@@ -230,14 +247,14 @@ class VellumTalk(irc.IRCClient):
             if sentence.botName is not None and sentence.botName != self.nickname.lower():
                 return
 
-            if channel == user:
-                response = session.privateCommand(req)
+            if respondTo == user:
+                response = session.privateCommand(req, *observers)
             else:
                 response = session.command(req)
             self.sendResponse(response)
         elif sentence.verbPhrases:
-            if channel == user:
-                response = session.privateInteraction(req)
+            if respondTo == user:
+                response = session.privateInteraction(req, *observers)
             else:
                 response = session.interaction(req)
             self.sendResponse(response)

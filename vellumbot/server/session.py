@@ -11,7 +11,17 @@ from vellumbot.server.fs import fs
 
 
 class UnknownHailError(Exception):
-    pass
+    """
+    The bot saw something that looked like a command, but could not figure out
+    how to run the command.
+    """
+
+
+class MissingRecipients(Exception):
+    """
+    An attempt was made to create a response to a request, but nobody told me
+    what the recipients would be.  (Call request.setRecipients() first.)
+    """
 
 
 class ISessionResponse(Interface):
@@ -57,7 +67,11 @@ class Response(object):
     def __init__(self, text, request, redirectTo=None):
         self.text = text
         self.context = request.message
+        if request.recipients is None:
+            raise MissingRecipients(
+                    "call request.setRecipients() before constructing a Response")
         self.channel = request.recipients[0] 
+        self.request = request
         self.more_channels = request.recipients[1:]
         self.redirectTo = redirectTo
 
@@ -66,7 +80,7 @@ class Response(object):
         if len(self.more_channels) > 0:
             text = self.text + ' (observed)'
             more_text = '%s (<%s>  %s)' % (self.text,
-                                           self.channel,
+                                           self.request.user,
                                            self.context)
         else:
             text = self.text
@@ -79,7 +93,7 @@ class Response(object):
             yield (ch, more_text)
 
 
-class Session:
+class Session(object):
     """
     A stateful channel, with game- and participant-specific knowledge that is
     remembered from one message to the next.
@@ -92,10 +106,12 @@ class Session:
                            # when nicks are removed or added
         self.observers = set()
 
+    def __repr__(self):
+        return "<Session %s>" % (self.channel,)
+
     # responses to being hailed by a user
     def respondTo_DEFAULT(self, request, args):
         raise UnknownHailError()
-
 
     def respondTo_lookup(self, req, rest):
         """
@@ -172,10 +188,10 @@ class Session:
         """True if nick is part of this session."""
         return nick in self.nicks
 
-    def privateInteraction(self, request):
+    def privateInteraction(self, request, *observers):
         # if user is one of self.observers, we don't want to send another
         # reply.  make a set of the two bundles to filter out dupes.
-        recipients = set([request.user] + list(self.observers))
+        recipients = set([request.user] + list(observers))
         return self.doInteraction(request, *recipients)
 
     def interaction(self, request):
@@ -213,16 +229,16 @@ class Session:
                         strings.append(formatted)
         if strings:
             text = '\n'.join(strings)
-            request.recipients = recipients
+            request.setRecipients(*recipients)
             return Response(text, request)
 
     def command(self, request):
         """Choose a method based on the command word, and pass args if any"""
-        request.recipients = [self.channel]
+        request.setRecipients(self.channel)
         return self.doCommand(request)
 
-    def privateCommand(self, request):
-        request.recipients = list(set([request.user] + list(self.observers)))
+    def privateCommand(self, request, *observers):
+        request.setRecipients(*set([request.user] + list(observers)))
         return self.doCommand(request)
 
     def doCommand(self, request):
