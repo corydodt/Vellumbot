@@ -103,11 +103,11 @@ class IRCTestCase(unittest.TestCase, util.DiffTestCaseMixin):
         expectations1 = []
         for line in lines1:
             expectations1.append(('Player', '%s \(observed\)' % (re.escape(line),)))
-            expectations1.append(('GeeEm', '%s \(<Player>  \.lookup spell cure\)' % (re.escape(line),)))
+            expectations1.append(('GeeEm', '<Player>  \.lookup spell cure  ===>  %s' % (re.escape(line),)))
         expectations1.append(('Player', 
             r'Replied to Player with top 5 matches for SPELL "cure" \(observed\)'))
         expectations1.append(('GeeEm', 
-            r'Replied to Player with top 5 matches for SPELL "cure" \(<Player>  \.lookup spell cure\)'))
+            r'<Player>  \.lookup spell cure  ===>  Replied to Player with top 5 matches for SPELL "cure"'))
 
         player('VellumTalk', '.lookup spell cure', *expectations1)
 
@@ -307,7 +307,7 @@ class IRCTestCase(unittest.TestCase, util.DiffTestCaseMixin):
         # players who ARE in the same channel as the gm get observed:
         player('VellumTalk', '[stabtastic 21]', 
            ('Player', r'Player, you rolled: stabtastic 21 = \[21\] \(observed\)'),
-           ('GeeEm', r'Player, you rolled: stabtastic 21 = \[21\] \(<Player>  \[stabtastic 21\]\)'),
+           ('GeeEm', r'<Player>  \[stabtastic 21\]  ===>  Player, you rolled: stabtastic 21'),
            )
 
         # testobserverchange

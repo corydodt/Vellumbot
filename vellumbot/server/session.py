@@ -79,9 +79,10 @@ class Response(object):
         """Generate messages to each channel"""
         if len(self.more_channels) > 0:
             text = self.text + ' (observed)'
-            more_text = '%s (<%s>  %s)' % (self.text,
+            more_text = '<%s>  %s  ===>  %s' % (
                                            self.request.user,
-                                           self.context)
+                                           self.context,
+                                           self.text,)
         else:
             text = self.text
 

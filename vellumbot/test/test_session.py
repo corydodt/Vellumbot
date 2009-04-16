@@ -30,16 +30,16 @@ class ResponseTestCase(unittest.TestCase):
         resp1 = session.Response("whatever", self.req, redirectTo=None)
         self.assertEqual(list(resp1.getMessages()), 
                 [('Player', 'whatever (observed)'),
-                 ('GeeEm', 'whatever (<Player>  .hello)'),
-                 ('GeeEm2', 'whatever (<Player>  .hello)'),
+                 ('GeeEm', '<Player>  .hello  ===>  whatever'),
+                 ('GeeEm2', '<Player>  .hello  ===>  whatever'),
                  ])
 
         self.req.setRecipients('#testing', 'GeeEm', 'GeeEm2')
         resp2 = session.Response("whatever", self.req, redirectTo=None)
         self.assertEqual(list(resp2.getMessages()), 
                 [('#testing', 'whatever (observed)'),
-                 ('GeeEm', 'whatever (<Player>  .hello)'),
-                 ('GeeEm2', 'whatever (<Player>  .hello)'),
+                 ('GeeEm', '<Player>  .hello  ===>  whatever'),
+                 ('GeeEm2', '<Player>  .hello  ===>  whatever'),
                  ])
 
     def test_redirectMessaging(self):
@@ -59,7 +59,7 @@ class ResponseTestCase(unittest.TestCase):
         resp2 = session.Response("whatever", self.req, redirectTo='Player')
         self.assertEqual(list(resp2.getMessages()), 
                 [('Player', 'whatever (observed)'),
-                 ('GeeEm', 'whatever (<Player>  .hello)'),
+                 ('GeeEm', '<Player>  .hello  ===>  whatever'),
                  ])
 
 
@@ -76,9 +76,9 @@ class ResponseGroupTestCase(unittest.TestCase):
         l = lambda r: list(r.getMessages())
 
         expected = [('Player', 'whatever 1 (observed)'),
-                 ('GeeEm', 'whatever 1 (<Player>  .hello)'),
+                 ('GeeEm', '<Player>  .hello  ===>  whatever 1'),
                  ('Player', 'whatever 2 (observed)'),
-                 ('GeeEm', 'whatever 2 (<Player>  .hello)'),
+                 ('GeeEm', '<Player>  .hello  ===>  whatever 2'),
                  ]
 
         self.assertEqual(l(rg), expected)
@@ -94,7 +94,6 @@ class ResponseGroupTestCase(unittest.TestCase):
         rg.addResponse(r1)
         rg.addResponse(r2)
         self.assertEqual(l(rg), expected)
-
 
 
 class SessionTestCase(unittest.TestCase):
