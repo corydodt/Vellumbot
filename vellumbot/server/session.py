@@ -86,6 +86,7 @@ class Response(object):
         else:
             text = self.text
 
+        assert text, "message text is blank"
         if self.channel.startswith('#') and self.redirectTo is not None:
             yield (self.redirectTo, text)
         else:
@@ -192,8 +193,11 @@ class Session(object):
     def privateInteraction(self, request, *observers):
         # if user is one of self.observers, we don't want to send another
         # reply.  make a set of the two bundles to filter out dupes.
-        recipients = set([request.user] + list(observers))
-        return self.doInteraction(request, *recipients)
+        others = set(observers)
+        if request.user in others:
+            others.remove(request.user)
+        ## TODO _ request.setRecipients(request.user, *others)
+        return self.doInteraction(request, request.user, *others)
 
     def interaction(self, request):
         return self.doInteraction(request, self.channel)
@@ -239,7 +243,10 @@ class Session(object):
         return self.doCommand(request)
 
     def privateCommand(self, request, *observers):
-        request.setRecipients(*set([request.user] + list(observers)))
+        others = set(observers)
+        if request.user in others:
+            others.remove(request.user)
+        request.setRecipients(request.user, *others)
         return self.doCommand(request)
 
     def doCommand(self, request):
@@ -270,9 +277,9 @@ class Session(object):
         return self.reportNicks('Added %s' % (str(nicks),))
 
     def removeNick(self, *nicks):
-        self.nicks ^= set(nicks)
+        self.nicks -= set(nicks)
         # also update self.observers
-        self.observers ^= set(nicks)
+        self.observers -= set(nicks)
         return self.reportNicks('Removed %s' % (str(nicks),))
 
     def reportNicks(self, why):
