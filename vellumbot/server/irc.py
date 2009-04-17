@@ -229,12 +229,12 @@ class VellumTalk(irc.IRCClient):
         observers = []
         if channel.lower() == self.nickname.lower():
             respondTo = user
-            session = self.defaultSession
+            ses = self.defaultSession
             for s in self.findSessions(user):
                 observers.extend(s.observers)
         else:
             respondTo = channel
-            session = self.findSessions(channel)[0]
+            ses = self.findSessions(channel)[0]
 
         try:
             sentence = linesyntax.parseSentence(msg)
@@ -250,15 +250,15 @@ class VellumTalk(irc.IRCClient):
                 return
 
             if respondTo == user:
-                response = session.privateCommand(req, *observers)
+                response = ses.privateCommand(req, *observers)
             else:
-                response = session.command(req)
+                response = ses.command(req)
             self.sendResponse(response)
         elif sentence.verbPhrases:
             if respondTo == user:
-                response = session.privateInteraction(req, *observers)
+                response = ses.privateInteraction(req, *observers)
             else:
-                response = session.interaction(req)
+                response = ses.interaction(req)
             self.sendResponse(response)
         else:
             pass
