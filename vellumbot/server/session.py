@@ -69,11 +69,13 @@ class Response(object):
     implements(ISessionResponse)
     def __init__(self, text, request, redirectTo=None):
         self.text = text
+        assert text, "response text is blank!"
         self.context = request.message
         if request.recipients is None:
             raise MissingRecipients(
                     "call request.setRecipients() before constructing a Response")
         self.channel = request.recipients[0] 
+        assert self.channel, "response channel is %r" % (self.channel,)
         self.request = request
         self.more_channels = request.recipients[1:]
         self.redirectTo = redirectTo
@@ -90,10 +92,12 @@ class Response(object):
             text = self.text
 
         if self.channel.startswith('#') and self.redirectTo is not None:
+            assert self.redirectTo, "redirectTo is blank!"
             yield (self.redirectTo, text)
         else:
             yield (self.channel, text)
         for ch in self.more_channels:
+            assert ch, "ch is blank!"
             yield (ch, more_text)
 
 
@@ -199,11 +203,12 @@ class Session(object):
         return self.doInteraction(request, *recipients)
 
     def interaction(self, request):
+        assert self.channel != NO_CHANNEL
         return self.doInteraction(request, self.channel)
 
     def doInteraction(self, request, *recipients):
         """Use actor's stats to apply each action to all targets"""
-        assert recipients, "interaction with no recipients"
+        assert [r for r in recipients if r], "interaction with recipients=%r" % (recipients,)
         if request.sentence.actor:
             actor = request.sentence.actor
         else:

@@ -25,6 +25,7 @@ class Request(object):
         """
         These people should get the message.
         """
+        assert [r for r in recipients if r], "setRecipients called with %r" % (recipients,)
         self.recipients = recipients
 
 
