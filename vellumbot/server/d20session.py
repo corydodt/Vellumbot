@@ -5,6 +5,24 @@ import bisect
 
 from vellumbot.server import alias, session, reference
 
+
+class InitRoll(object):
+    """
+    An initiative roll, sortable descending
+    """
+    def __init__(self, n, user):
+        self.n = n
+        self.user = user
+
+    def __cmp__(self, other):
+        return -cmp(self.n, other.n)
+
+    def __str__(self):
+        if self.user is None:
+            return "new round"
+        return "%s (%s)" % (self.user, self.n)
+
+
 class D20Session(session.Session):
     def __init__(self, channel):
         session.Session.__init__(self, channel)
@@ -12,7 +30,7 @@ class D20Session(session.Session):
         alias.registerAliasHook(('init',), self.doInitiative)
 
     def doInitiative(self, user, result):
-        self.initiatives.addSorted((result[0].sum(), user))
+        self.initiatives.addSorted(InitRoll(result[0].sum(), user))
 
     def _lookup_anything(self, req, terms, domain):
         assert type(domain) is unicode
@@ -58,20 +76,14 @@ class D20Session(session.Session):
         return self._lookup_anything(req, terms, u'spell')
 
     def _formatThisRound(self):
-        next = self.initiatives.current()
-        def fmt(i):
-            if i[1] is None:
-                return "new round"
-            return "%s (%s)" % (i[1], i[0])
-
         cur = self.initiatives.current()
         n = self.initiatives.next()
 
-        if cur[1] is None:
-            return '++ New round ++  Next: %s.' % ( fmt(n),)
+        if cur.user is None:
+            return '++ New round ++  Next: %s.' % ( n,)
             # TODO - update timed events here (don't update on prev init)
         else:
-            return 'GOING NOW: %s!  Next: %s.' % ( fmt(cur), fmt(n))
+            return 'GOING NOW: %s!  Next: %s.' % ( cur, n)
 
     def respondTo_n(self, user, _):
         """Next initiative"""
@@ -89,10 +101,10 @@ class D20Session(session.Session):
             rotated = self.initiatives.asRotatedList()
             inits = []
             for init in rotated:
-                if init[1] is None:
+                if init.user is None:
                     s = 'new round'
                 else:
-                    s = '%s/%s' % (init[1], init[0])
+                    s = '%s/%s' % (init.user, init.n)
                 inits.append(s)
             return 'INITIATIVES: ' + ' || '.join(inits)
         else:
@@ -100,7 +112,7 @@ class D20Session(session.Session):
 
     def respondTo_combat(self, user, _):
         """Start combat by resetting initiatives"""
-        self.initiatives = SortedRing([(9999, None)])
+        self.initiatives = SortedRing([InitRoll(9999, None)])
         return '** Beginning combat **'
 
 

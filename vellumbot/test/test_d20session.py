@@ -91,24 +91,42 @@ class TestD20Session(util.BotTestCase):
         geeEm('VellumTalk', '.inits', ('GeeEm', r'INITIATIVES: \(none\)'))
         geeEm('#testing', '.combat', 
             ('#testing', r'\*\* Beginning combat \*\*'))
+        # now: newround
         geeEm('#testing', '[4d1+2]', 
               ('#testing', r'GeeEm, you rolled: 4d1\+2 = \[1\+1\+1\+1\+2 = 6\]'))
         geeEm('#testing', '[init 20]', 
               ('#testing', r'GeeEm, you rolled: init 20 = \[20\]'))
-        geeEm('#testing', '.n', ('#testing', r'\+\+ New round \+\+  Next: GeeEm \(20\)\.'))
+        # now: newround GeeEm
         geeEm('#testing', '.n', 
             ('#testing', r'GOING NOW: GeeEm \(20\)!  Next: new round\.'))
-        geeEm('#testing', '.p', ('#testing', r'\+\+ New round \+\+  Next: GeeEm \(20\)\.'))
+        # now: GeeEm newround
+        geeEm('#testing', '.n', ('#testing', r'\+\+ New round \+\+  Next: GeeEm \(20\)\.'))
+        # now: newround GeeEm
         geeEm('#testing', '.p', 
             ('#testing', r'GOING NOW: GeeEm \(20\)!  Next: new round\.'))
+        # now: GeeEm newround
+        geeEm('#testing', '.p', ('#testing', r'\+\+ New round \+\+  Next: GeeEm \(20\)\.'))
+        # now: newround GeeEm
         geeEm('#testing', '.inits', 
-              ('#testing', r'INITIATIVES: GeeEm/20 || NEW ROUND'))
+              ('#testing', r'INITIATIVES: new round \|\| GeeEm/20'))
         geeEm('#testing', '*Hamlet [init 20]',
               ('#testing', r'Hamlet, you rolled: init 20 = \[20\]'))
+        # now: newround GeeEm Hamlet
+        geeEm('#testing', '.n', ('#testing', r'GOING NOW: GeeEm \(20\)!  Next: Hamlet \(20\)\.'))
+        # now: GeeEm Hamlet newround
         geeEm('#testing', '.inits', 
-              ('#testing', r'INITIATIVES: GeeEm/20 || Hamlet/20 || NEW ROUND'))
+              ('#testing', r'INITIATIVES: GeeEm/20 \|\| Hamlet/20 \|\| new round'))
         geeEm('#testing', '.n',
             ('#testing', r'GOING NOW: Hamlet \(20\)!  Next: new round\.'))
+        # now: Hamlet newround GeeEm
+        geeEm('#testing', '*Ophelia [init 18]',
+              ('#testing', r'Ophelia, you rolled: init 18 = \[18\]'))
+        # now: Hamlet Ophelia newround GeeEm
+        geeEm('#testing', '*Yorick [init 2]',
+              ('#testing', r'Yorick, you rolled: init 2 = \[2\]'))
+        # now: Hamlet Ophelia Yorick newround GeeEm
+        geeEm('#testing', '.inits', 
+              ('#testing', r'INITIATIVES: Hamlet/20 \|\| Ophelia/18 \|\| Yorick/2 \|\| new round \|\| GeeEm/20'))
 
 
 class TestSortedRing(unittest.TestCase):
