@@ -1,5 +1,8 @@
 """Session subclass specific to D20 (inits etc.)"""
 
+from collections import deque
+import bisect
+
 from vellumbot.server import alias, session, reference
 
 class D20Session(session.Session):
@@ -38,7 +41,6 @@ class D20Session(session.Session):
                 rg.addResponse([m, req])
 
                 return rg
-
 
     def lookup_monster(self, req, terms):
         """
@@ -93,3 +95,67 @@ class D20Session(session.Session):
         self.initiatives = [(9999, None)]
         return '** Beginning combat **'
 
+
+class SortedRing(object):
+    """
+    A sequence data structure which retains a canonical order and also has a
+    ring looping mechanism.
+    """
+    def __init__(self, items=None):
+        if items is None:
+            self.rotation = 0
+            self.items = []
+        else:
+            self.items = sorted(items)
+            self.rotation = 0
+
+    def __getitem__(self, n):
+        return self.items[n]
+
+    def addSorted(self, item):
+        """
+        Insert item into the items, keeping sort
+        """
+        bisect.insort_right(self.items, item)
+        if self.items.index(item) < self.rotation:
+            self.rotation = self.rotation + 1
+
+    def index(self, item):
+        return self.items.index(item)
+
+    def rotate(self, n=None):
+        """
+        Rotate the ring by n (like deque.rotate)
+        """
+        if n is None:
+            n = 1
+        rot = (self.rotation + n) % len(self.items)
+        self.rotation = rot
+
+    def __delitem__(self, n):
+        del self.items[n]
+        if self.rotation > len(self.items):
+            self.rotation = 0
+
+    def __len__(self):
+        return len(self.items)
+
+    def current(self):
+        rot = self.rotation
+        return self.items[rot]
+
+    def next(self):
+        rot = self.rotation + 1
+        if rot > (len(self)-1):
+            n = 0
+        else:
+            n = rot
+        return self.items[n]
+
+    def prev(self):
+        rot = self.rotation - 1
+        if rot < 0:
+            p = -1
+        else:
+            p = rot
+        return self.items[p]
