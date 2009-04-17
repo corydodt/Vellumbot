@@ -96,6 +96,5 @@ class ResponseGroupTestCase(unittest.TestCase):
         self.assertEqual(l(rg), expected)
 
 
-
 class SessionTestCase(unittest.TestCase):
     pass
