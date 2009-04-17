@@ -2,9 +2,109 @@
 D20Session tests
 """
 import operator
+import re
 
 from twisted.trial import unittest
-from vellumbot.server import d20session
+
+import vellumbot.server.session
+from ..server import d20session
+from . import util
+
+class TestD20Session(util.BotTestCase):
+    def test_reference(self):
+        """
+        I respond to people who look things up
+        """
+        vellumbot.server.session.TESTING = True
+        vellumbot.server.irc.TESTING = True
+        geeEm = lambda *a, **kw: self.anyone('GeeEm', *a, **kw)
+        player = lambda *a, **kw: self.anyone('Player', *a, **kw)
+
+        self.vt.userJoined("Player", "#testing")
+
+        geeEm('#testing', '.gm', 
+              ('#testing', r'GeeEm is now a GM and will observe private messages for session #testing'))
+
+        lines1 = '''"cure light wounds mass": **Cure** Light Wounds, Mass Conjuration ...  positive energy to **cure** 1d8 points of damag ... reature. Like other **cure** spells, mass **cure** l ... 
+"cure minor wounds": **Cure** Minor Wounds Conjuration (Heal ... pell functions like **cure** light wounds , exce ... pt that it **cure**s only 1 point of da ... 
+"cure critical wounds": **Cure** Critical Wounds Conjuration (H ... pell functions like **cure** light wounds , exce ... pt that it **cure**s 4d8 points of dama ... 
+"cure critical wounds mass": **Cure** Critical Wounds, Mass Conjurat ... functions like mass **cure** light wounds , exce ... pt that it **cure**s 4d8 points of dama ... 
+"cure moderate wounds mass": **Cure** Moderate Wounds, Mass Conjurat ... functions like mass **cure** light wounds , exce ... pt that it **cure**s 2d8 points of dama ... '''.split('\n')
+
+        expectations1 = []
+        for line in lines1:
+            expectations1.append(('Player', '%s \(observed\)' % (re.escape(line),)))
+            expectations1.append(('GeeEm', '<Player>  \.lookup spell cure  ===>  %s' % (re.escape(line),)))
+        expectations1.append(('Player', 
+            r'Replied to Player with top 5 matches for SPELL "cure" \(observed\)'))
+        expectations1.append(('GeeEm', 
+            r'<Player>  \.lookup spell cure  ===>  Replied to Player with top 5 matches for SPELL "cure"'))
+
+        player('VellumTalk', '.lookup spell cure', *expectations1)
+
+        expectations2 = []
+        for line in lines1:
+            expectations2.append(('Player', '%s' % (re.escape(line),)))
+        expectations2.append(('#testing', 
+            r'Replied to Player with top 5 matches for SPELL "cure"'))
+
+        player('#testing', '.lookup spell cure', *expectations2)
+
+        player('#testing', '.lookup spell cure serious wounds mass', (
+'#testing', r'Player: SPELL <<Cure .*, Mass>> Conjuration \(Healing\) || Level: Cleric 7, Druid 8 || This spell functions like .* +35\)\.'),
+                )
+
+        player('#testing', '.lookup spell wenis', (
+'#testing', r'Player: No SPELL contains "wenis"\.  Try searching with a wildcard e\.g\. \.lookup spell wenis\*'),
+                )
+        player('#testing', '.lookup spell wenis*', (
+'#testing', r'Player: No SPELL contains "wenis\*"\.'),
+                )
+
+        lines2 = '''"heal": Heal Conjuration \(Healing\) Level: C \.\.\.
+"heal mass": Heal, Mass Conjuration \(Healing\) Le \.\.\.
+"heal mount": Heal Mount Conjuration \(Healing\) Le \.\.\.
+"seed heal": Seed: Heal Conjuration \(Healing\) Sp \.\.\.
+"cure critical wounds": Cure Critical Wounds Conjuration \(H \.\.\.'''.split('\n')
+        expectations3 = []
+        for line in lines2:
+            expectations3.append(('Player', line))
+        expectations3.append(('#testing', 'Replied to Player with top 5 matches for SPELL "heal\*"'))
+        player('#testing', '.lookup spell heal*', *expectations3)
+
+        player('#testing', '.lookup monster mohrg', (
+'#testing', r'Player: MONSTER <<Mohrg>> Chaotic Evil .*mohrg.htm')
+                )
+
+    def test_failedReference(self):
+        """
+        Lookups that refer to things that I don't know how to look up give an
+        error.
+        """
+        vellumbot.server.session.TESTING = True
+        vellumbot.server.irc.TESTING = True
+        self.anyone('Player', '#testing', '.lookup feat cleave', 
+                ('#testing', 'I don\'t know how to look those things up.'))
+
+    def test_initiative(self):
+        geeEm = lambda *a, **kw: self.anyone('GeeEm', *a, **kw)
+        geeEm('VellumTalk', '.inits', ('GeeEm', r'Initiative list: \(none\)'))
+        geeEm('VellumTalk', '.combat', 
+            ('GeeEm', r'\*\* Beginning combat \*\*'))
+        geeEm('#testing', '[4d1+2]', 
+              ('#testing', r'GeeEm, you rolled: 4d1\+2 = \[1\+1\+1\+1\+2 = 6\]'))
+        geeEm('#testing', '[init 20]', 
+              ('#testing', r'GeeEm, you rolled: init 20 = \[20\]'))
+        geeEm('VellumTalk', '.n', ('GeeEm', r'\+\+ New round \+\+'))
+        geeEm('VellumTalk', '.n', 
+              ('GeeEm', r'GeeEm \(init 20\) is ready to act \. \. \.'))
+        geeEm('VellumTalk', '.p', ('GeeEm', r'\+\+ New round \+\+'))
+        geeEm('VellumTalk', '.p', 
+              ('GeeEm', r'GeeEm \(init 20\) is ready to act \. \. \.'))
+        geeEm('VellumTalk', '.inits', 
+              ('GeeEm', r'Initiative list: GeeEm/20, NEW ROUND/9999'))
+
+    
 
 class TestSortedRing(unittest.TestCase):
     def test_addSorted(self):
@@ -164,3 +264,5 @@ class TestSortedRing(unittest.TestCase):
         self.assertEqual(ring.current(), 'd')
         ring.rotate(73)
         self.assertEqual(ring.current(), 'a')
+
+

@@ -3,6 +3,7 @@ from twisted.trial import unittest
 
 from ..server.irc import Request
 from ..server import session
+from . import util
 
 
 class ResponseTestCase(unittest.TestCase):
@@ -96,5 +97,5 @@ class ResponseGroupTestCase(unittest.TestCase):
         self.assertEqual(l(rg), expected)
 
 
-class SessionTestCase(unittest.TestCase):
+class SessionTestCase(util.BotTestCase):
     pass

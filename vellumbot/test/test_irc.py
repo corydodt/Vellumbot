@@ -1,160 +1,9 @@
-from twisted.trial import unittest
-import re
-
-from twisted.internet import protocol
-from twisted.test.proto_helpers import StringTransport
-
-from vellumbot.server import alias, d20session
-from vellumbot.server.irc import VellumTalk
+from vellumbot.server import d20session
 import vellumbot.server.session
 from . import util
 
 
-
-def formPrivMsg(*recipients):
-    if recipients:
-        r = ["PRIVMSG %s :%s" % (targ,exp) for targ,exp in recipients]
-        return "\n".join(r)
-    return ''
-
-
-NL = re.compile(r'\r?\n')
-
-class ResponseTest:
-    """Notation for testing a response to a command."""
-    def __init__(self, transport, user, channel, sent, *recipients):
-        self.user = user
-        self.transport = transport
-        self.channel = channel
-        self.sent = sent
-
-        self.expectation = formPrivMsg(*recipients)
-
-        self.last_pos = 0
-
-    def getActual(self):
-        """
-        Pull the actual data from the pipe
-        """
-        ret = self.transport.value()[self.last_pos:].strip()
-        # wipe the text every time.
-        self.transport.clear()
-        self.last_pos = len(ret)
-        return ret
-
-    def check(self, testcase):
-        actual = self.getActual()
-        # sort the messages because we usually don't care about order (TODO -
-        # maybe someday we will)
-        actuality = NL.split(actual)
-        expectation = NL.split(self.expectation)
-        testcase.failIfRxDiff(expectation, actuality,
-                        'expected (regex)', 'actual',
-                        )
-        return True #?
-
-
-class IRCTestCase(unittest.TestCase, util.DiffTestCaseMixin):
-
-    def setUp(self):
-        # TODO - move d20-specific tests, e.g. init and other alias hooks?
-        # save off and clear alias.aliases, since it gets persisted # FIXME
-        orig_aliases = alias.aliases
-        alias.aliases = {}
-
-        self.transport = StringTransport()
-        vt = self.vt = VellumTalk()
-        vt.performLogin = 0
-        vt.joined("#testing")
-        vt.defaultSession = d20session.D20Session('')
-        vt.makeConnection(self.transport)
-
-    def tearDown(self):
-        self.vt.resetter.stop()
-
-    def anyone(self, who, channel, target, *recipients):
-        """
-        Simulate an interaction between the named person and VellumTalk
-        """
-        r = ResponseTest(self.transport, who, channel, target, *recipients)
-        self.vt.privmsg(r.user, r.channel, r.sent)
-        r.check(self)
-
-    def test_reference(self):
-        """
-        I respond to people who look things up
-        """
-        vellumbot.server.session.TESTING = True
-        vellumbot.server.irc.TESTING = True
-        geeEm = lambda *a, **kw: self.anyone('GeeEm', *a, **kw)
-        player = lambda *a, **kw: self.anyone('Player', *a, **kw)
-
-        self.vt.userJoined("Player", "#testing")
-
-        geeEm('#testing', '.gm', 
-              ('#testing', r'GeeEm is now a GM and will observe private messages for session #testing'))
-
-        lines1 = '''"cure light wounds mass": **Cure** Light Wounds, Mass Conjuration ...  positive energy to **cure** 1d8 points of damag ... reature. Like other **cure** spells, mass **cure** l ... 
-"cure minor wounds": **Cure** Minor Wounds Conjuration (Heal ... pell functions like **cure** light wounds , exce ... pt that it **cure**s only 1 point of da ... 
-"cure critical wounds": **Cure** Critical Wounds Conjuration (H ... pell functions like **cure** light wounds , exce ... pt that it **cure**s 4d8 points of dama ... 
-"cure critical wounds mass": **Cure** Critical Wounds, Mass Conjurat ... functions like mass **cure** light wounds , exce ... pt that it **cure**s 4d8 points of dama ... 
-"cure moderate wounds mass": **Cure** Moderate Wounds, Mass Conjurat ... functions like mass **cure** light wounds , exce ... pt that it **cure**s 2d8 points of dama ... '''.split('\n')
-
-        expectations1 = []
-        for line in lines1:
-            expectations1.append(('Player', '%s \(observed\)' % (re.escape(line),)))
-            expectations1.append(('GeeEm', '<Player>  \.lookup spell cure  ===>  %s' % (re.escape(line),)))
-        expectations1.append(('Player', 
-            r'Replied to Player with top 5 matches for SPELL "cure" \(observed\)'))
-        expectations1.append(('GeeEm', 
-            r'<Player>  \.lookup spell cure  ===>  Replied to Player with top 5 matches for SPELL "cure"'))
-
-        player('VellumTalk', '.lookup spell cure', *expectations1)
-
-        expectations2 = []
-        for line in lines1:
-            expectations2.append(('Player', '%s' % (re.escape(line),)))
-        expectations2.append(('#testing', 
-            r'Replied to Player with top 5 matches for SPELL "cure"'))
-
-        player('#testing', '.lookup spell cure', *expectations2)
-
-        player('#testing', '.lookup spell cure serious wounds mass', (
-'#testing', r'Player: SPELL <<Cure .*, Mass>> Conjuration \(Healing\) || Level: Cleric 7, Druid 8 || This spell functions like .* +35\)\.'),
-                )
-
-        player('#testing', '.lookup spell wenis', (
-'#testing', r'Player: No SPELL contains "wenis"\.  Try searching with a wildcard e\.g\. \.lookup spell wenis\*'),
-                )
-        player('#testing', '.lookup spell wenis*', (
-'#testing', r'Player: No SPELL contains "wenis\*"\.'),
-                )
-
-        lines2 = '''"heal": Heal Conjuration \(Healing\) Level: C \.\.\.
-"heal mass": Heal, Mass Conjuration \(Healing\) Le \.\.\.
-"heal mount": Heal Mount Conjuration \(Healing\) Le \.\.\.
-"seed heal": Seed: Heal Conjuration \(Healing\) Sp \.\.\.
-"cure critical wounds": Cure Critical Wounds Conjuration \(H \.\.\.'''.split('\n')
-        expectations3 = []
-        for line in lines2:
-            expectations3.append(('Player', line))
-        expectations3.append(('#testing', 'Replied to Player with top 5 matches for SPELL "heal\*"'))
-        player('#testing', '.lookup spell heal*', *expectations3)
-
-        player('#testing', '.lookup monster mohrg', (
-'#testing', r'Player: MONSTER <<Mohrg>> Chaotic Evil .*mohrg.htm')
-                )
-
-    def test_failedReference(self):
-        """
-        Lookups that refer to things that I don't know how to look up give an
-        error.
-        """
-        vellumbot.server.session.TESTING = True
-        vellumbot.server.irc.TESTING = True
-        self.anyone('Player', '#testing', '.lookup feat cleave', 
-                ('#testing', 'I don\'t know how to look those things up.'))
-
+class IRCTestCase(util.BotTestCase):
     def test_commandsAndSentences(self):
         """
         Commands, either spoken as ".command" or "vellumtalk: command" and
@@ -175,21 +24,8 @@ class IRCTestCase(unittest.TestCase, util.DiffTestCaseMixin):
         geeEm('#testing', 'hello',)
         geeEm('#testing', 'VellumTalk: hello', ('#testing', r'Hello GeeEm\.'))
         geeEm('#testing', '.hello', ('#testing', r'Hello GeeEm\.'))
-        geeEm('VellumTalk', '.inits', ('GeeEm', r'Initiative list: \(none\)'))
-        geeEm('VellumTalk', '.combat', 
-            ('GeeEm', r'\*\* Beginning combat \*\*'))
-        geeEm('#testing', '[4d1+2]', 
-              ('#testing', r'GeeEm, you rolled: 4d1\+2 = \[1\+1\+1\+1\+2 = 6\]'))
         geeEm('#testing', '[init 20]', 
               ('#testing', r'GeeEm, you rolled: init 20 = \[20\]'))
-        geeEm('VellumTalk', '.n', ('GeeEm', r'\+\+ New round \+\+'))
-        geeEm('VellumTalk', '.n', 
-              ('GeeEm', r'GeeEm \(init 20\) is ready to act \. \. \.'))
-        geeEm('VellumTalk', '.p', ('GeeEm', r'\+\+ New round \+\+'))
-        geeEm('VellumTalk', '.p', 
-              ('GeeEm', r'GeeEm \(init 20\) is ready to act \. \. \.'))
-        geeEm('VellumTalk', '.inits', 
-              ('GeeEm', r'Initiative list: GeeEm/20, NEW ROUND/9999'))
         # geeEm('VellumTalk', '.help', ('GeeEm', r's+hello: Greet.')), FIXME
         geeEm('VellumTalk', '.aliases', ('GeeEm', r'Aliases for GeeEm:   init=20'))
         geeEm('VellumTalk', '.aliases GeeEm', 
@@ -351,7 +187,6 @@ class IRCTestCase(unittest.TestCase, util.DiffTestCaseMixin):
         tryTheseNicks("GeeEm", "Player")
         tryTheseNicks("MFen", "MoonFallen")
         tryTheseNicks("aa", "bbb")
-
 
     def test_nickCaseFolding(self):
         """

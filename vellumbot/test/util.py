@@ -8,6 +8,13 @@ import re
 
 from itertools import repeat, chain, izip
 
+from twisted.trial import unittest
+from twisted.test.proto_helpers import StringTransport
+
+from ..server import d20session, session, alias
+from ..server.irc import VellumTalk
+
+
 # FIXME - not needed in python 2.6
 def izip_longest(*args, **kwds):
     # izip_longest('ABCD', 'xy', fillvalue='-') --> Ax By C- D-
@@ -108,3 +115,77 @@ class DiffTestCaseMixin(object):
                 )
 
     assertNoRxDiff = failIfRxDiff
+
+
+def formPrivMsg(*recipients):
+    if recipients:
+        r = ["PRIVMSG %s :%s" % (targ,exp) for targ,exp in recipients]
+        return "\n".join(r)
+    return ''
+
+
+NL = re.compile(r'\r?\n')
+
+class ResponseTest:
+    """Notation for testing a response to a command."""
+    def __init__(self, transport, user, channel, sent, *recipients):
+        self.user = user
+        self.transport = transport
+        self.channel = channel
+        self.sent = sent
+
+        self.expectation = formPrivMsg(*recipients)
+
+        self.last_pos = 0
+
+    def getActual(self):
+        """
+        Pull the actual data from the pipe
+        """
+        ret = self.transport.value()[self.last_pos:].strip()
+        # wipe the text every time.
+        self.transport.clear()
+        self.last_pos = len(ret)
+        return ret
+
+    def check(self, testcase):
+        actual = self.getActual()
+        # sort the messages because we usually don't care about order (TODO -
+        # maybe someday we will)
+        actuality = NL.split(actual)
+        expectation = NL.split(self.expectation)
+        testcase.failIfRxDiff(expectation, actuality,
+                        'expected (regex)', 'actual',
+                        )
+        return True #?
+
+
+class BotTestCase(unittest.TestCase, DiffTestCaseMixin):
+    """
+    Set up a VellumTalk bot, have it join #testing and hide the aliases.
+    Tests can be run using the anyone() function
+    """
+    def setUp(self):
+        # TODO - move d20-specific tests, e.g. init and other alias hooks?
+        # save off and clear alias.aliases, since it gets persisted # FIXME
+        orig_aliases = alias.aliases
+        alias.aliases = {}
+
+        self.transport = StringTransport()
+        vt = self.vt = VellumTalk()
+        vt.performLogin = 0
+        vt.joined("#testing")
+        vt.defaultSession = d20session.D20Session(session.NO_CHANNEL)
+        vt.makeConnection(self.transport)
+
+    def tearDown(self):
+        self.vt.resetter.stop()
+
+    def anyone(self, who, channel, target, *recipients):
+        """
+        Simulate an interaction between the named person and VellumTalk
+        """
+        r = ResponseTest(self.transport, who, channel, target, *recipients)
+        self.vt.privmsg(r.user, r.channel, r.sent)
+        r.check(self)
+
