@@ -109,8 +109,6 @@ class Session(object):
     """
     def __init__(self, channel):
         self.channel = channel
-        # TODO - move this into d20-specific code somewhere
-        self.initiatives = []
         self.nicks = set() # TODO - add a wrapper function for fixing bindings
                            # when nicks are removed or added
         self.observers = set()
@@ -187,11 +185,6 @@ class Session(object):
         response = file(fs.help).read() % _d
         # TODO - don't ever send this to the channel
         return response
-
-    def doInitiative(self, user, result):
-        self.initiatives.append((result[0].sum(), user))
-        self.initiatives.sort()
-        self.initiatives.reverse()
 
     def matchNick(self, nick):
         """True if nick is part of this session."""

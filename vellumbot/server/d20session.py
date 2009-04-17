@@ -11,6 +11,11 @@ class D20Session(session.Session):
         self.initiatives = []
         alias.registerAliasHook(('init',), self.doInitiative)
 
+    def doInitiative(self, user, result):
+        self.initiatives.append((result[0].sum(), user))
+        self.initiatives.sort()
+        self.initiatives.reverse()
+
     def _lookup_anything(self, req, terms, domain):
         assert type(domain) is unicode
         UPPER = domain.upper()
