@@ -7,7 +7,7 @@ from twisted.internet import reactor, protocol, task
 from twisted.python import log
 
 
-from vellumbot.server import linesyntax, d20session
+from vellumbot.server import linesyntax, d20session, session
 
 
 class Request(object):
@@ -124,7 +124,7 @@ class VellumTalk(irc.IRCClient):
         """Called when bot has succesfully signed on to server."""
         # create a session to respond to private messages from nicks
         # not in any channel I'm in
-        self.defaultSession = d20session.D20Session('')
+        self.defaultSession = d20session.D20Session(session.NO_CHANNEL)
         # join my default channel
         self.join(self.factory.channel)
 

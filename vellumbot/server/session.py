@@ -10,6 +10,9 @@ from vellumbot.server import alias
 from vellumbot.server.fs import fs
 
 
+NO_CHANNEL = object()
+
+
 class UnknownHailError(Exception):
     """
     The bot saw something that looked like a command, but could not figure out
