@@ -8,13 +8,11 @@ from vellumbot.server import alias, session, reference
 class D20Session(session.Session):
     def __init__(self, channel):
         session.Session.__init__(self, channel)
-        self.initiatives = []
+        self.initiatives = SortedRing()
         alias.registerAliasHook(('init',), self.doInitiative)
 
     def doInitiative(self, user, result):
-        self.initiatives.append((result[0].sum(), user))
-        self.initiatives.sort()
-        self.initiatives.reverse()
+        self.initiatives.addSorted((result[0].sum(), user))
 
     def _lookup_anything(self, req, terms, domain):
         assert type(domain) is unicode
@@ -61,8 +59,8 @@ class D20Session(session.Session):
 
     def respondTo_n(self, user, _):
         """Next initiative"""
-        next = self.initiatives.pop(0)
-        self.initiatives.append(next)
+        self.initiatives.rotate()
+        next = self.initiatives.current()
         if next[1] is None:
             return '++ New round ++'
             # TODO - update timed events here (don't update on prev init)
@@ -71,9 +69,8 @@ class D20Session(session.Session):
 
     def respondTo_p(self, user, _):
         """Previous initiative"""
-        last, prev = self.initiatives.pop(-1), self.initiatives.pop(-1)
-        self.initiatives.append(prev)
-        self.initiatives.insert(0, last)
+        self.initiatives.rotate(-1)
+        prev = self.initiatives.current()
         if prev[1] is None:
             return '++ New round ++'
         else:
@@ -81,11 +78,10 @@ class D20Session(session.Session):
 
     def respondTo_inits(self, user, _):
         """List inits, starting with the currently active character, in order"""
-        # the "current" initiative is always at the end of the list
         if len(self.initiatives) > 0:
-            current = self.initiatives[-1]
-            inits = ['%s/%s' % (current[1], current[0])]
-            for init in self.initiatives[:-1]:
+            rotated = self.initiatives.asRotatedList()
+            inits = []
+            for init in rotated:
                 if init[1] is None:
                     name = 'NEW ROUND'
                 else:
@@ -97,7 +93,7 @@ class D20Session(session.Session):
 
     def respondTo_combat(self, user, _):
         """Start combat by resetting initiatives"""
-        self.initiatives = [(9999, None)]
+        self.initiatives = SortedRing([(9999, None)])
         return '** Beginning combat **'
 
 
@@ -164,3 +160,13 @@ class SortedRing(object):
         else:
             p = rot
         return self.items[p]
+
+    def asRotatedList(self):
+        """
+        List of all the items, oriented by rotation.  In other words,
+        beginning from current() and counting to the right, return all items.
+        """
+        rot = self.rotation
+        l = self[rot:]
+        rest = self[:rot]
+        return l + rest

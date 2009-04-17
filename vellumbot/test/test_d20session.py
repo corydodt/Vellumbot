@@ -104,7 +104,6 @@ class TestD20Session(util.BotTestCase):
         geeEm('VellumTalk', '.inits', 
               ('GeeEm', r'Initiative list: GeeEm/20, NEW ROUND/9999'))
 
-    
 
 class TestSortedRing(unittest.TestCase):
     def test_addSorted(self):
@@ -265,4 +264,10 @@ class TestSortedRing(unittest.TestCase):
         ring.rotate(73)
         self.assertEqual(ring.current(), 'a')
 
-
+    def test_asRotatedList(self):
+        """
+        Show all items in their rotated position
+        """
+        ring = d20session.SortedRing(['a','b','c','d'])
+        ring.rotate(2)
+        self.assertEqual(ring.asRotatedList(), ['c','d','a','b'])
