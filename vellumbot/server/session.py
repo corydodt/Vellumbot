@@ -194,7 +194,7 @@ class Session(object):
 
     def matchNick(self, nick):
         """True if nick is part of this session."""
-        return nick in self.nicks
+        return nick.lower() in map(str.lower, self.nicks)
 
     def privateInteraction(self, request, *observers):
         # if user is one of self.observers, we don't want to send another

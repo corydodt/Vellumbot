@@ -227,7 +227,7 @@ class VellumTalk(irc.IRCClient):
         # Check to see if they're sending me a private message
         # If so, the return channel is the user.
         observers = []
-        if channel == self.nickname:
+        if channel.lower() == self.nickname.lower():
             respondTo = user
             session = self.defaultSession
             for s in self.findSessions(user):

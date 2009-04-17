@@ -322,3 +322,43 @@ class IRCTestCase(unittest.TestCase, util.DiffTestCaseMixin):
            ('Player', r'Player, you rolled: stabtastic 23 = \[23\]')
            )
 
+    def test_nickOrderSensitive(self):
+        """
+        Observer/observee order is respected (fixed a bug)
+        """
+        def tryTheseNicks(gmName, playerName):
+            self.vt.userJoined(playerName, "#testing")
+            self.vt.userJoined(gmName, "#testing")
+            player = lambda *a, **kw: self.anyone(playerName, *a, **kw)
+            geeEm = lambda *a, **kw: self.anyone(gmName, *a, **kw)
+
+            geeEm("#testing", ".gm", 
+              ('#testing', r'%s is now a GM and will observe private messages for session #testing' % (
+                       gmName,)
+                   )
+            )
+            player('VellumTalk', '[stabtastic 24]', 
+               (playerName, r'%s, you rolled: stabtastic 24 = \[24\] \(observed\)' % (
+                   playerName,)
+                   ),
+               (gmName, r'<%s>  \[stabtastic 24\]  ===>  %s, you rolled: stabtastic 24' % (
+                   playerName, playerName)
+                   ),
+            )
+            self.vt.userLeft(playerName, "#testing")
+            self.vt.userLeft(gmName, "#testing")
+        # try a few different nicks so we get a different arbitrary sort order
+        tryTheseNicks("GeeEm", "Player")
+        tryTheseNicks("MFen", "MoonFallen")
+        tryTheseNicks("aa", "bbb")
+
+
+    def test_nickCaseFolding(self):
+        """
+        IRC servers that send me the nick lowercased will still match
+        """
+        player = lambda *a, **kw: self.anyone('Player', *a, **kw)
+        player("VellumTalk", ".hello",
+                ("Player", "Hello Player."))
+        player("vellumtalk", ".hello",
+                ("Player", "Hello Player."))
