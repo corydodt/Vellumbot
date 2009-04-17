@@ -47,7 +47,11 @@ class IRCTestCase(util.BotTestCase):
         geeEm('VellumTalk', '.aliases', 
               ('GeeEm', r'Aliases for GeeEm:   argh=20, foobar=30, kill=20'))
 
-        # testhijack
+    def test_impersonate(self):
+        """
+        We can use the * syntax to impersonate another
+        """
+        geeEm = lambda *a, **kw: self.anyone('GeeEm', *a, **kw)
         geeEm('VellumTalk', '*grimlock1 does a [smackdown 1000]', 
               ('GeeEm', 'grimlock1, you rolled: smackdown 1000 = \[1000\]'))
         geeEm('#testing', '*grimlock1 does a [bitchslap 1000]', 
