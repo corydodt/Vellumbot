@@ -278,9 +278,9 @@ class Session(object):
         return self.reportNicks('Added %s' % (str(nicks),))
 
     def removeNick(self, *nicks):
-        self.nicks ^= set(nicks)
+        self.nicks -= set(nicks)
         # also update self.observers
-        self.observers ^= set(nicks)
+        self.observers -= set(nicks)
         return self.reportNicks('Removed %s' % (str(nicks),))
 
     def reportNicks(self, why):
