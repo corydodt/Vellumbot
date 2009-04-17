@@ -88,21 +88,27 @@ class TestD20Session(util.BotTestCase):
 
     def test_initiative(self):
         geeEm = lambda *a, **kw: self.anyone('GeeEm', *a, **kw)
-        geeEm('VellumTalk', '.inits', ('GeeEm', r'Initiative list: \(none\)'))
-        geeEm('VellumTalk', '.combat', 
-            ('GeeEm', r'\*\* Beginning combat \*\*'))
+        geeEm('VellumTalk', '.inits', ('GeeEm', r'INITIATIVES: \(none\)'))
+        geeEm('#testing', '.combat', 
+            ('#testing', r'\*\* Beginning combat \*\*'))
         geeEm('#testing', '[4d1+2]', 
               ('#testing', r'GeeEm, you rolled: 4d1\+2 = \[1\+1\+1\+1\+2 = 6\]'))
         geeEm('#testing', '[init 20]', 
               ('#testing', r'GeeEm, you rolled: init 20 = \[20\]'))
-        geeEm('VellumTalk', '.n', ('GeeEm', r'\+\+ New round \+\+'))
-        geeEm('VellumTalk', '.n', 
-              ('GeeEm', r'GeeEm \(init 20\) is ready to act \. \. \.'))
-        geeEm('VellumTalk', '.p', ('GeeEm', r'\+\+ New round \+\+'))
-        geeEm('VellumTalk', '.p', 
-              ('GeeEm', r'GeeEm \(init 20\) is ready to act \. \. \.'))
-        geeEm('VellumTalk', '.inits', 
-              ('GeeEm', r'Initiative list: GeeEm/20, NEW ROUND/9999'))
+        geeEm('#testing', '.n', ('#testing', r'\+\+ New round \+\+  Next: GeeEm \(20\)\.'))
+        geeEm('#testing', '.n', 
+            ('#testing', r'GOING NOW: GeeEm \(20\)!  Next: new round\.'))
+        geeEm('#testing', '.p', ('#testing', r'\+\+ New round \+\+  Next: GeeEm \(20\)\.'))
+        geeEm('#testing', '.p', 
+            ('#testing', r'GOING NOW: GeeEm \(20\)!  Next: new round\.'))
+        geeEm('#testing', '.inits', 
+              ('#testing', r'INITIATIVES: GeeEm/20 || NEW ROUND'))
+        geeEm('#testing', '*Hamlet [init 20]',
+              ('#testing', r'Hamlet, you rolled: init 20 = \[20\]'))
+        geeEm('#testing', '.inits', 
+              ('#testing', r'INITIATIVES: GeeEm/20 || Hamlet/20 || NEW ROUND'))
+        geeEm('#testing', '.n',
+            ('#testing', r'GOING NOW: Hamlet \(20\)!  Next: new round\.'))
 
 
 class TestSortedRing(unittest.TestCase):

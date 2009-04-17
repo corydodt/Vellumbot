@@ -57,24 +57,31 @@ class D20Session(session.Session):
         """
         return self._lookup_anything(req, terms, u'spell')
 
+    def _formatThisRound(self):
+        next = self.initiatives.current()
+        def fmt(i):
+            if i[1] is None:
+                return "new round"
+            return "%s (%s)" % (i[1], i[0])
+
+        cur = self.initiatives.current()
+        n = self.initiatives.next()
+
+        if cur[1] is None:
+            return '++ New round ++  Next: %s.' % ( fmt(n),)
+            # TODO - update timed events here (don't update on prev init)
+        else:
+            return 'GOING NOW: %s!  Next: %s.' % ( fmt(cur), fmt(n))
+
     def respondTo_n(self, user, _):
         """Next initiative"""
         self.initiatives.rotate()
-        next = self.initiatives.current()
-        if next[1] is None:
-            return '++ New round ++'
-            # TODO - update timed events here (don't update on prev init)
-        else:
-            return '%s (init %s) is ready to act . . .' % (next[1], next[0],)
+        return self._formatThisRound()
 
     def respondTo_p(self, user, _):
         """Previous initiative"""
         self.initiatives.rotate(-1)
-        prev = self.initiatives.current()
-        if prev[1] is None:
-            return '++ New round ++'
-        else:
-            return '%s (init %s) is ready to act . . .' % (prev[1], prev[0],)
+        return self._formatThisRound()
 
     def respondTo_inits(self, user, _):
         """List inits, starting with the currently active character, in order"""
@@ -83,13 +90,13 @@ class D20Session(session.Session):
             inits = []
             for init in rotated:
                 if init[1] is None:
-                    name = 'NEW ROUND'
+                    s = 'new round'
                 else:
-                    name = init[1]
-                inits.append('%s/%s' % (name, init[0]))
-            return 'Initiative list: ' + ', '.join(inits)
+                    s = '%s/%s' % (init[1], init[0])
+                inits.append(s)
+            return 'INITIATIVES: ' + ' || '.join(inits)
         else:
-            return 'Initiative list: (none)'
+            return 'INITIATIVES: (none)'
 
     def respondTo_combat(self, user, _):
         """Start combat by resetting initiatives"""
