@@ -28,8 +28,8 @@ class TestD20Session(util.BotTestCase):
         lines1 = '''"cure light wounds mass": **Cure** Light Wounds, Mass Conjuration ...  positive energy to **cure** 1d8 points of damag ... reature. Like other **cure** spells, mass **cure** l ... 
 "cure minor wounds": **Cure** Minor Wounds Conjuration (Heal ... pell functions like **cure** light wounds , exce ... pt that it **cure**s only 1 point of da ... 
 "cure critical wounds": **Cure** Critical Wounds Conjuration (H ... pell functions like **cure** light wounds , exce ... pt that it **cure**s 4d8 points of dama ... 
-"cure serious wounds mass": **Cure** Serious Wounds, Mass Conjurati ... functions like mass **cure** light wounds , exce ... pt that it **cure**s 3d8 points of dama ... 
-"cure critical wounds mass": **Cure** Critical Wounds, Mass Conjurat ... functions like mass **cure** light wounds , exce ... pt that it **cure**s 4d8 points of dama ... '''.split('\n')
+"cure moderate wounds": **Cure** Moderate Wounds Conjuration (H ... pell functions like **cure** light wounds , exce ... pt that it **cure**s 2d8 points of dama ... 
+"cure serious wounds": **Cure** Serious Wounds Conjuration (He ... pell functions like **cure** light wounds , exce ... pt that it **cure**s 3d8 points of dama ... '''.split('\n')
 
         expectations1 = []
         for line in lines1:
@@ -61,8 +61,8 @@ class TestD20Session(util.BotTestCase):
 '#testing', r'Player: No SPELL contains "wenis\*"\.'),
                 )
 
-        lines2 = '''"heal": Heal Conjuration \(Healing\) Level: C \.\.\.
-"heal mass": Heal, Mass Conjuration \(Healing\) Le \.\.\.
+        lines2 = '''"heal mass": Heal, Mass Conjuration \(Healing\) Le \.\.\.
+"heal": Heal Conjuration \(Healing\) Level: C \.\.\.
 "heal mount": Heal Mount Conjuration \(Healing\) Le \.\.\.
 "seed heal": Seed: Heal Conjuration \(Healing\) Sp \.\.\.
 "cure critical wounds": Cure Critical Wounds Conjuration \(H \.\.\.'''.split('\n')

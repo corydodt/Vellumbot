@@ -8,10 +8,9 @@ class ReferenceTestCase(unittest.TestCase, util.DiffTestCaseMixin):
     """
     Test lookups and references
     """
-
     def test_findExactOne(self):
         """
-        Check that the searching of spell database works: exact match one word
+        Searching of spell database works: exact match one word
         """
         ret = reference.find(u'spell', [u'fireball'])
         self.assertNoRxDiff(
@@ -22,8 +21,7 @@ class ReferenceTestCase(unittest.TestCase, util.DiffTestCaseMixin):
 
     def test_findExactMultiple(self):
         """
-        Check that the searching of spell database works: exact match multiple
-        words
+        Searching of spell database works: exact match multiple words
         """
         ret = reference.find(u'spell', [u'cure serious wounds mass'])
         self.assertNoRxDiff(
@@ -46,12 +44,24 @@ class ReferenceTestCase(unittest.TestCase, util.DiffTestCaseMixin):
 
     def test_findExactSpecialCharacters(self):
         """
-        Check that the searching of spell database works: match spells with
-        special characters
+        Searching of spell database works: match spells with special
+        characters
         """
         ret = reference.find(u'spell', [u'cats grace'])
         self.assertNoRxDiff(
                 [re.escape(r"<<Cat's Grace>> Transmutation || Level: Bard 2, Druid 2, Ranger 2, Sorcerer/Wizard 2 || Casting Time: 1 standard action || VSM || Range: Touch || Target: Creature touched || Duration: 1 min./level || Save: Will negates (harmless) || Subject gains +4 to Dex for 1 min./level. || http://www.d20srd.org/srd/spells/catsGrace.htm"),
+                    ],
+                ret,
+                'expected (regex)', 'actual')
+
+    def test_findAmbiguousExact(self):
+        """
+        I can search for spells which have names that are part of
+        some other spell, even when there are multiple words
+        """
+        ret = reference.find(u'spell', [u'cure light wounds'])
+        self.assertNoRxDiff(
+                [re.escape(r'<<Cure Light Wounds>> Conjuration (Healing) || Level: Bard 1, Cleric 1, Druid 1, Healing 1, Paladin 1, Ranger 2 || Casting Time: 1 standard action || VS || Range: Touch || Target: Creature touched || Duration: Instantaneous || Save: Will half (harmless); see text || Cures 1d8 damage +1/level (max +5). || http://www.d20srd.org/srd/spells/cureLightWounds.htm'),
                     ],
                 ret,
                 'expected (regex)', 'actual')
