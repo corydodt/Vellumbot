@@ -1,4 +1,4 @@
-from vellumbot.server import d20session
+from vellumbot.server import d20session, irc
 import vellumbot.server.session
 from . import util
 
@@ -201,3 +201,18 @@ class IRCTestCase(util.BotTestCase):
                 ("Player", "Hello Player."))
         player("vellumtalk", ".hello",
                 ("Player", "Hello Player."))
+
+    def test_veryLongMessage(self):
+        """
+        Very long messages get split sensibly across lines
+        """
+        nick = ''.join(["%dBilly"%(n%10) for n in range(80)])
+        message = "Hello %s" % (nick,) + "."
+
+        lines = []
+        for n in range((len(nick)/irc.MAX_LINE) + 1):
+            lines.append((nick, message[n*irc.MAX_LINE:(n+1)*irc.MAX_LINE]+r'$'))
+
+        veryLongNick = lambda *a, **kw: self.anyone(nick, *a, **kw)
+
+        veryLongNick("VellumTalk", ".hello", *lines)

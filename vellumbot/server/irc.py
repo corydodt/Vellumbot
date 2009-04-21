@@ -10,6 +10,22 @@ from twisted.python import log
 from vellumbot.server import linesyntax, d20session, session
 
 
+MAX_LINE = 420
+
+
+def splitTextIRCWise(s, width):
+    """
+    Split s into lines, and for each line longer than width, split it into
+    width-long segments.
+    """
+    lines = s.splitlines()
+    ret = []
+    for line in lines:
+        for n in range((len(line)/width) + 1):
+            ret.append(line[n*width:(n+1)*width])
+    return ret
+
+
 class Request(object):
     """
     The state object for privmsgs that are made on the bot
@@ -105,7 +121,7 @@ class VellumTalk(irc.IRCClient):
             if isinstance(text, unicode):
                 text = text.encode('utf-8')
 
-            splittext = text.splitlines()
+            splittext = splitTextIRCWise(text, MAX_LINE)
             log.msg("====> %s:    %s" % (channel, text[:80]))
             if len(splittext) > 1:
                 self.msgSlowly(channel, splittext)

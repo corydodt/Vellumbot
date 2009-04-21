@@ -50,31 +50,37 @@ class TestD20Session(util.BotTestCase):
 
         player('#testing', '.lookup spell cure', *expectations2)
 
-        player('#testing', '.lookup spell cure serious wounds mass', (
-'#testing', r'Player: SPELL <<Cure .*, Mass>> Conjuration \(Healing\) || Level: Cleric 7, Druid 8 || This spell functions like .* +35\)\.'),
-                )
+        # this spell goes over the 420 char limit.  rig it to make this test
+        # simpler
+        vellumbot.server.irc.MAX_LINE = 600
+        try:
+            player('#testing', '.lookup spell cure serious wounds mass', (
+    '#testing', r'Player: SPELL <<Cure .*, Mass>> Conjuration \(Healing\) || Level: Cleric 7, Druid 8 || This spell functions like .* +35\)\.'),
+                    )
+        
+            player('#testing', '.lookup spell wenis', (
+    '#testing', r'Player: No SPELL contains "wenis"\.  Try searching with a wildcard e\.g\. \.lookup spell wenis\*'),
+                    )
+            player('#testing', '.lookup spell wenis*', (
+    '#testing', r'Player: No SPELL contains "wenis\*"\.'),
+                    )
 
-        player('#testing', '.lookup spell wenis', (
-'#testing', r'Player: No SPELL contains "wenis"\.  Try searching with a wildcard e\.g\. \.lookup spell wenis\*'),
-                )
-        player('#testing', '.lookup spell wenis*', (
-'#testing', r'Player: No SPELL contains "wenis\*"\.'),
-                )
-
-        lines2 = '''"heal mass": Heal, Mass Conjuration \(Healing\) Le \.\.\.
+            lines2 = '''"heal mass": Heal, Mass Conjuration \(Healing\) Le \.\.\.
 "heal": Heal Conjuration \(Healing\) Level: C \.\.\.
 "heal mount": Heal Mount Conjuration \(Healing\) Le \.\.\.
 "seed heal": Seed: Heal Conjuration \(Healing\) Sp \.\.\.
 "cure critical wounds": Cure Critical Wounds Conjuration \(H \.\.\.'''.split('\n')
-        expectations3 = []
-        for line in lines2:
-            expectations3.append(('Player', line))
-        expectations3.append(('#testing', 'Replied to Player with top 5 matches for SPELL "heal\*"'))
-        player('#testing', '.lookup spell heal*', *expectations3)
+            expectations3 = []
+            for line in lines2:
+                expectations3.append(('Player', line))
+            expectations3.append(('#testing', 'Replied to Player with top 5 matches for SPELL "heal\*"'))
+            player('#testing', '.lookup spell heal*', *expectations3)
 
-        player('#testing', '.lookup monster mohrg', (
-'#testing', r'Player: MONSTER <<Mohrg>> Chaotic Evil .*mohrg.htm')
-                )
+            player('#testing', '.lookup monster mohrg', (
+    '#testing', r'Player: MONSTER <<Mohrg>> Chaotic Evil .*mohrg.htm')
+                    )
+        finally:
+            vellumbot.server.irc.MAX_LINE = 420 
 
     def test_failedReference(self):
         """
