@@ -73,6 +73,12 @@ def shortFormatAliases(user, aliases=aliases):
     return ', '.join(formatted_aliases)
 
 def resolve(actor, words, aliases=aliases, parsed_dice=None, temp_modifier=0, target=None):
+    """
+    If there is a known alias or a dice expression in there, return the
+    message result from processing it.
+
+    If neither a known alias nor a dice expression, return None.
+    """
     rolled = getResult(actor, words, aliases, parsed_dice, temp_modifier, target=target)
     if rolled is None:
         return None
@@ -110,14 +116,10 @@ def getResult(actor, words, aliases=aliases, parsed_dice=None, temp_modifier=0, 
     callAliasHooks(words, actor, rolled)
     return rolled
 
-
-
-def formatAlias(actor, 
-                verbs, 
-                results, 
-                parsed_dice, 
-                temp_modifier=0, 
-                target=None):
+def formatAlias(actor, verbs, results, parsed_dice, temp_modifier=0, target=None):
+    """
+    Return the result of rolling some dice as an irc message
+    """
     assert target is None
     sorted = 0 
     verbs = list(verbs)
