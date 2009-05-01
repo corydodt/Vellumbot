@@ -13,13 +13,21 @@ CREATE TABLE user (
 );
 ''',
 
-'''CREATE TABLE alias (
+'''
+CREATE TABLE alias (
     userId INTEGER references user(id),
     words varchar(255),
     expression varchar(255),
     PRIMARY KEY (userId, words)
 );
 ''',
+
+'''
+CREATE TABLE session (
+    name varchar(255) PRIMARY KEY
+);
+''',
+
 ]
 
 def run(argv=None):
