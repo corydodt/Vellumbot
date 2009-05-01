@@ -8,6 +8,8 @@ from twisted.python import usage
 from twisted.plugin import IPlugin
 from twisted.application.service import IServiceMaker
 
+from vellumbot.user import userDatabase
+
 class Options(usage.Options):
     optParameters = [['port', 'p', '6667', 'Port to connect to'],
                      ['server', 's', 'irc.freenode.net', 'IRC server to connect to'],
@@ -40,6 +42,7 @@ class VellumbotServerMaker(object):
         from vellumbot.server.irc import VellumTalkFactory
         from twisted.application.internet import TCPClient
         f = VellumTalkFactory('#vellum')
+        f.store = user.userDatabase()
         svc = TCPClient(options['server'], int(options['port']), f)
         return svc
 
