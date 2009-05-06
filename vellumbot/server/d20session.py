@@ -3,6 +3,8 @@
 from collections import deque
 import bisect
 
+from storm import locals
+
 from vellumbot.server import alias, session, reference
 
 
@@ -24,13 +26,15 @@ class InitRoll(object):
 
 
 class D20Session(session.Session):
-    def __init__(self, channel):
-        session.Session.__init__(self, channel)
+    def __init__(self, isDefaultSession=False):
+        session.Session.__init__(self, isDefaultSession)
         self.initiatives = SortedRing()
         alias.registerAliasHook(('init',), self.doInitiative)
 
+    __storm_loaded__ = __init__  
+
     def doInitiative(self, user, result):
-        self.initiatives.addSorted(InitRoll(result[0].sum(), user))
+        self.initiatives.addSorted(InitRoll(result[0].sum(), user.name))
 
     def _lookup_anything(self, req, terms, domain):
         assert type(domain) is unicode
@@ -53,13 +57,13 @@ class D20Session(session.Session):
                 rg = session.ResponseGroup()
 
                 for line in looked:
-                    rg.addResponse(session.Response(line, req,
-                        redirectTo=req.user))
+                    ss = self._nameToRecipient(req.user)
+                    rg.addResponse(session.Response(line, req, redirectTo=ss))
 
                 count = len(looked)
                 m = 'Replied to %s with top %s matches for SPELL "%s"' % (req.user, count, ts)
 
-                rg.addResponse([m, req])
+                rg.addResponse(session.Response(m, req))
 
                 return rg
 
@@ -85,17 +89,17 @@ class D20Session(session.Session):
         else:
             return 'GOING NOW: %s!  Next: %s.' % ( cur, n)
 
-    def respondTo_n(self, user, _):
+    def respondTo_n(self, user, actor, _):
         """Next initiative"""
         self.initiatives.rotate()
         return self._formatThisRound()
 
-    def respondTo_p(self, user, _):
+    def respondTo_p(self, user, actor, _):
         """Previous initiative"""
         self.initiatives.rotate(-1)
         return self._formatThisRound()
 
-    def respondTo_inits(self, user, _):
+    def respondTo_inits(self, user, actor, _):
         """List inits, starting with the currently active character, in order"""
         if len(self.initiatives) > 0:
             rotated = self.initiatives.asRotatedList()
@@ -110,7 +114,7 @@ class D20Session(session.Session):
         else:
             return 'INITIATIVES: (none)'
 
-    def respondTo_combat(self, user, _):
+    def respondTo_combat(self, user, actor, _):
         """Start combat by resetting initiatives"""
         self.initiatives = SortedRing([InitRoll(9999, None)])
         return '** Beginning combat **'

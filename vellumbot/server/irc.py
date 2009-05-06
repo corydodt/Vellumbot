@@ -6,6 +6,7 @@ from twisted.words.protocols import irc
 from twisted.internet import reactor, protocol, task
 from twisted.python import log
 
+from storm.locals import Store
 
 from vellumbot.server import linesyntax, d20session, session
 
@@ -54,7 +55,12 @@ class VellumTalk(irc.IRCClient):
     nickname = "VellumTalk"
 
     def __init__(self, *args, **kwargs):
-        self.wtf = 0  # number of times a "wtf" has occurred recently.
+        self.wtf = 0                 # number of times a "wtf" has occurred
+                                     # recently.
+
+        self.store = None            # storm Store instance, needed for
+                                     # sessions
+
         # reset wtf's every 30 seconds 
         self.resetter = task.LoopingCall(self._resetWtfCount)
         self.resetter.start(30.0)
@@ -75,11 +81,15 @@ class VellumTalk(irc.IRCClient):
         has /msg'd the bot and that person is not in a channel with the bot.
         """
         found = []
-        for session in self.sessions:
-            if channel == session.channel:
-                found.append(session)
-            if session.matchNick(channel):
-                found.append(session)
+        for ss in self.sessions:
+            try:
+                _channel = channel.decode(ss.encoding)
+                if _channel == ss.name:
+                    found.append(ss)
+                if ss.matchNick(_channel):
+                    found.append(ss)
+            except UnicodeDecodeError:
+                continue
         if found == []:
             found = [self.defaultSession]
         return found
@@ -114,21 +124,22 @@ class VellumTalk(irc.IRCClient):
         if response is None:
             return
         _already = {}
-        for channel, text in response.getMessages():
+        for channel, text, encoding in response.getMessages():
             # don't send messages to any users twice
             if (channel, text) in _already:
                 continue
 
+            _channel = channel.name.encode(encoding)
+
             # twisted's abstract sockets insist that data be as byte strings.
-            if isinstance(text, unicode):
-                text = text.encode('utf-8')
+            text = text.encode(encoding)
 
             splittext = splitTextIRCWise(text, MAX_LINE)
-            log.msg("====> %s:    %s" % (channel, text[:80]))
+            log.msg("====> %s:    %s" % (_channel, text[:80]))
             if len(splittext) > 1:
-                self.msgSlowly(channel, splittext)
+                self.msgSlowly(_channel, splittext)
             else:
-                self.msg(channel, text)
+                self.msg(_channel, text)
             _already[(channel, text)] = True
 
     # callbacks for irc events
@@ -158,10 +169,14 @@ class VellumTalk(irc.IRCClient):
         tracking who's in the session.
         """
         # find or make a session
-        session = self.findSessions(channel)[0]
-        if session is self.defaultSession: # i.e., not found
-            session = d20session.D20Session(channel)
-            self.sessions.append(session)
+        ss = self.findSessions(channel)[0]
+        if ss.isDefaultSession: # i.e., not found
+            ss = d20session.D20Session()
+            ss.name = channel.decode(ss.encoding)
+            self.store.add(ss)
+            Store.of(ss).commit()
+
+            self.sessions.append(ss)
 
         self.responding = 1
 
@@ -169,29 +184,32 @@ class VellumTalk(irc.IRCClient):
         """
         When the bot parts a channel.
         """
-        session = self.findSessions(channel)[0]
-        self.sessions.remove(session)
+        ss = self.findSessions(channel)[0]
+        self.sessions.remove(ss)
 
     def kickedFrom(self, channel, kicker, message):
         """
         Don't let the door hit the bot's ass on the way out.
         """
-        session = self.findSessions(channel)[0]
-        self.sessions.remove(session)
+        ss = self.findSessions(channel)[0]
+        self.sessions.remove(ss)
 
     def userJoined(self, user, channel):
         """
         Some other person joins a channel the bot is already watching.
         """
-        session = self.findSessions(channel)[0]
-        self.sendResponse(session.addNick(user))
+        ss = self.findSessions(channel)[0]
+        user = user.decode(ss.encoding)
+        r = ss.addNick(user)
+        self.sendResponse(r)
 
     def userLeft(self, user, channel):
         """
         Some other person leaves a channel the bot is already watching.
         """
-        session = self.findSessions(channel)[0]
-        self.sendResponse(session.removeNick(user))
+        ss = self.findSessions(channel)[0]
+        user = user.decode(ss.encoding)
+        self.sendResponse(ss.removeNick(user))
 
     def userQuit(self, user, quitmessage):
         """
@@ -200,11 +218,13 @@ class VellumTalk(irc.IRCClient):
         """
         sessions = self.findSessions(user)
         for s in sessions:
+            user = user.decode(s.encoding)
             self.sendResponse(s.removeNick(user))
 
     def userKicked(self, user, channel, kicker, kickmessage):
-        session = self.findSessions(channel)[0]
-        self.sendResponse(session.removeNick(user))
+        ss = self.findSessions(channel)[0]
+        user = user.decode(ss.encoding)
+        self.sendResponse(ss.removeNick(user))
 
     def userRenamed(self, old, new):
         """
@@ -213,6 +233,8 @@ class VellumTalk(irc.IRCClient):
         """
         sessions = self.findSessions(old)
         for s in sessions:
+            old = old.decode(s.encoding)
+            new = new.decode(s.encoding)
             self.sendResponse(s.rename(old, new))
 
     def irc_RPL_NAMREPLY(self, prefix, (user, _, channel, names)):
@@ -226,8 +248,8 @@ class VellumTalk(irc.IRCClient):
                 nicks.remove(nick)
                 nicks.append(nick[1:])
 
-        session = self.findSessions(channel)[0]
-        self.sendResponse(session.addNick(*nicks))
+        ss = self.findSessions(channel)[0]
+        self.sendResponse(ss.addNick(*nicks))
 
     def irc_RPL_ENDOFNAMES(self, prefix, params):
         pass
@@ -254,32 +276,39 @@ class VellumTalk(irc.IRCClient):
             respondTo = user
             ses = self.defaultSession
             for s in self.findSessions(user):
-                observers.extend(s.observers)
+                if not hasattr(s, 'observers'):
+                    import pdb; pdb.set_trace()
+                for o in s.observers:
+                    observers.append(o.name.decode(ses.encoding))
         else:
             respondTo = channel
             ses = self.findSessions(channel)[0]
 
+        msg = msg.decode(ses.encoding)
         try:
             sentence = linesyntax.parseSentence(msg)
         except RuntimeError:
             return
 
+        user = user.decode(ses.encoding)
+        respondTo = respondTo.decode(ses.encoding)
         req = Request(user, respondTo, msg)
         req.sentence = sentence
 
+        _observers = [o.decode(ses.encoding) for o in observers]
         if sentence.command:
             # ignore people talking to other people
             if sentence.botName is not None and sentence.botName != self.nickname.lower():
                 return
 
             if respondTo == user:
-                response = ses.privateCommand(req, *observers)
+                response = ses.privateCommand(req, *_observers)
             else:
                 response = ses.command(req)
             self.sendResponse(response)
         elif sentence.verbPhrases:
             if respondTo == user:
-                response = ses.privateInteraction(req, *observers)
+                response = ses.privateInteraction(req, *_observers)
             else:
                 response = ses.interaction(req)
             self.sendResponse(response)
@@ -305,7 +334,12 @@ class VellumTalkFactory(protocol.ClientFactory):
 
     def __init__(self, channel):
         self.channel = channel
+        self.store = None
         # no protocol.ClientFactory.__init__ to call
+
+    def startFactory(self):
+        assert self.store is not None, "Must set %s.store before starting!" % (
+                self.__class__.__name__,)
 
     def clientConnectionLost(self, connector, reason):
         """If we get disconnected, reconnect to server."""

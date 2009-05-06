@@ -120,18 +120,31 @@ class Sentence(object):
         self.botName = None
         self.command = None
         self._commandArgs = []
-        self.actor = None
+        self._actor = None
         self.verbPhrases = []
         self.targets = []
 
     def get_commandArgs(self):
-        return self._commandArgs
+        return [s.decode('ascii') for s in self._commandArgs]
 
     def set_commandArgs(self, s):
+        from vellumbot.server import session
+        if type(s) is unicode:    # FIXME - working around python bug 1548891 
+            s = s.encode('ascii') # in shlex.split()                          
         # blah - shlex.split(None) blocks waiting for input, so protect it
         self._commandArgs = shlex.split(s or '')
 
     commandArgs = property(get_commandArgs, set_commandArgs)
+
+    def get_actor(self):
+        if self._actor is None:
+            return None
+        return self._actor.decode('ascii') # only ascii allowed
+
+    def set_actor(self, v):
+        self._actor = v
+
+    actor = property(get_actor, set_actor)
 
     def __repr__(self):
         return '<Sentence %s>' % (str(self),)

@@ -4,20 +4,42 @@ from twisted.trial import unittest
 from ..server.irc import Request
 from ..server import session
 from . import util
+from .. import user
+
+class UserAddingTestMixin(object):
+    """
+    Provide a user store to work with, and addUser
+
+    Make sure to upcall setUp
+    """
+    def setUp(self):
+        self.store = user.userDatabase('sqlite:')
+
+    def addUser(self, name):
+        """
+        Convenience to add and return a user
+        """
+        u = user.User()
+        u.name = name
+        self.store.add(u)
+        self.store.commit()
+        return u
 
 
-class ResponseTestCase(unittest.TestCase):
+class ResponseTestCase(unittest.TestCase, UserAddingTestMixin):
     def setUp(self):
         self.req = Request('Player', '#testing', '.hello')
+        UserAddingTestMixin.setUp(self)
 
     def test_normalMessaging(self):
         """
         Messages get generated
         """
-        self.req.setRecipients('Player')
+        player = self.addUser(u'Player')
+        self.req.setRecipients(player)
         resp = session.Response("whatever", self.req)
         self.assertEqual(list(resp.getMessages()), 
-                [('Player', 'whatever')])
+                [(player, 'whatever', 'utf-8')])
 
     def test_noRecipients(self):
         self.assertRaises(session.MissingRecipients, session.Response,
@@ -27,59 +49,75 @@ class ResponseTestCase(unittest.TestCase):
         """
         Messages with more recipients get generated
         """
-        self.req.setRecipients('Player', 'GeeEm', 'GeeEm2')
+        player = self.addUser(u'Player')
+        gm = self.addUser(u'GeeEm')
+        gm2 = self.addUser(u'GeeEm2')
+
+        self.req.setRecipients(player, gm, gm2)
         resp1 = session.Response("whatever", self.req, redirectTo=None)
         self.assertEqual(list(resp1.getMessages()), 
-                [('Player', 'whatever (observed)'),
-                 ('GeeEm', '<Player>  .hello  ===>  whatever'),
-                 ('GeeEm2', '<Player>  .hello  ===>  whatever'),
+                [(player, 'whatever (observed)', 'utf-8'),
+                 (gm, '<Player>  .hello  ===>  whatever', 'utf-8'),
+                 (gm2, '<Player>  .hello  ===>  whatever', 'utf-8'),
                  ])
 
-        self.req.setRecipients('#testing', 'GeeEm', 'GeeEm2')
+        _testing = session.Session(); _testing.name = u'#testing'
+        self.req.setRecipients(_testing, gm, gm2)
         resp2 = session.Response("whatever", self.req, redirectTo=None)
         self.assertEqual(list(resp2.getMessages()), 
-                [('#testing', 'whatever (observed)'),
-                 ('GeeEm', '<Player>  .hello  ===>  whatever'),
-                 ('GeeEm2', '<Player>  .hello  ===>  whatever'),
+                [(_testing, 'whatever (observed)', 'utf-8'),
+                 (gm, '<Player>  .hello  ===>  whatever', 'utf-8'),
+                 (gm2, '<Player>  .hello  ===>  whatever', 'utf-8'),
                  ])
 
     def test_redirectMessaging(self):
         """
         Redirected messages go to some other person
         """
-        self.req.setRecipients('#testing')
-        resp1 = session.Response("whatever", self.req, redirectTo='Player')
+        _testing = session.Session(); _testing.name = u'#testing'
+        player = self.addUser(u'Player')
+        gm = self.addUser(u'GeeEm')
+
+        self.req.setRecipients(_testing)
+        resp1 = session.Response("whatever", self.req, redirectTo=player)
         self.assertEqual(list(resp1.getMessages()), 
-                [('Player', 'whatever'),
-                 ])
+                [(player, 'whatever', 'utf-8'), ]
+            )
 
         # redirectTo redirects only the PRIMARY recipient's message, i.e. the
         # first argument.  all other recipients still get whatever they would
         # get.
-        self.req.setRecipients('#testing', 'GeeEm')
-        resp2 = session.Response("whatever", self.req, redirectTo='Player')
+        self.req.setRecipients(_testing, gm)
+        resp2 = session.Response("whatever", self.req, redirectTo=player)
         self.assertEqual(list(resp2.getMessages()), 
-                [('Player', 'whatever (observed)'),
-                 ('GeeEm', '<Player>  .hello  ===>  whatever'),
+                [(player, 'whatever (observed)', 'utf-8'),
+                 (gm, '<Player>  .hello  ===>  whatever', 'utf-8'),
                  ])
 
 
-class ResponseGroupTestCase(unittest.TestCase):
+class ResponseGroupTestCase(unittest.TestCase, UserAddingTestMixin):
     def setUp(self):
         self.req = Request('Player', '#testing', '.hello')
+        UserAddingTestMixin.setUp(self)
 
     def test_responseKinds(self):
-        self.req.setRecipients('Player', 'GeeEm')
+        """
+        Ensure that responseGroups are checking that only Responses are
+        provided as an argument to addResponse
+        """
+        player = self.addUser(u'Player')
+        gm = self.addUser(u'GeeEm')
+        self.req.setRecipients(player, gm)
         r1 = session.Response('whatever 1', self.req)
         r2 = session.Response('whatever 2', self.req)
         # init with responses
         rg = session.ResponseGroup(r1, r2)
         l = lambda r: list(r.getMessages())
 
-        expected = [('Player', 'whatever 1 (observed)'),
-                 ('GeeEm', '<Player>  .hello  ===>  whatever 1'),
-                 ('Player', 'whatever 2 (observed)'),
-                 ('GeeEm', '<Player>  .hello  ===>  whatever 2'),
+        expected = [(player, 'whatever 1 (observed)', 'utf-8'),
+                 (gm, '<Player>  .hello  ===>  whatever 1', 'utf-8'),
+                 (player, 'whatever 2 (observed)', 'utf-8'),
+                 (gm, '<Player>  .hello  ===>  whatever 2', 'utf-8'),
                  ]
 
         self.assertEqual(l(rg), expected)
@@ -87,9 +125,7 @@ class ResponseGroupTestCase(unittest.TestCase):
         # add responses - textual (this is no longer allowed - test for
         # assertion)
         rg = session.ResponseGroup()
-        rg.addResponse(['whatever 1', self.req])
-        rg.addResponse(['whatever 2', self.req])
-        self.assertEqual(l(rg), expected)
+        self.assertRaises(AssertionError, rg.addResponse, ['whatever 1', self.req])
 
         # add responses - response objects
         rg = session.ResponseGroup()

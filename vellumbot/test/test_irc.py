@@ -1,4 +1,7 @@
+import operator
+
 from vellumbot.server import d20session, irc
+from vellumbot.user import User
 import vellumbot.server.session
 from . import util
 
@@ -13,8 +16,11 @@ class IRCTestCase(util.BotTestCase):
         """
         vellumbot.server.session.TESTING = True
         vellumbot.server.irc.TESTING = True
-        self.vt.defaultSession = d20session.D20Session('#testing')
+
         geeEm = lambda *a, **kw: self.anyone('GeeEm', *a, **kw)
+        ugm = self.addUser(u"GeeEm")
+        uplayer = self.addUser(u"Player")
+
         geeEm('VellumTalk', 'hello')
         geeEm('VellumTalk', 'OtherGuy: hello')
         geeEm('VellumTalk', 'VellumTalk: hello', ('GeeEm', r'Hello GeeEm\.'))
@@ -52,19 +58,54 @@ class IRCTestCase(util.BotTestCase):
         We can use the * syntax to impersonate another
         """
         geeEm = lambda *a, **kw: self.anyone('GeeEm', *a, **kw)
-        geeEm('VellumTalk', '*grimlock1 does a [smackdown 1000]', 
-              ('GeeEm', 'grimlock1, you rolled: smackdown 1000 = \[1000\]'))
+
+        ugm = self.addUser(u"GeeEm")
+
+        geeEm('VellumTalk', '*grimlock1 does a [smack down1 1000]', 
+              ('GeeEm', 'grimlock1, you rolled: smack down1 1000 = \[1000\]'))
         geeEm('#testing', '*grimlock1 does a [bitchslap 1000]', 
               ('#testing', 'grimlock1, you rolled: bitchslap 1000 = \[1000\]'))
-        geeEm('VellumTalk', '*grimlock1 does a [smackdown]', 
-              ('GeeEm', 'grimlock1, you rolled: smackdown = \[1000\]'))
-        geeEm('VellumTalk', 'I do a [smackdown]')
+        geeEm('VellumTalk', '*grimlock1 does a [smack down1]', 
+              ('GeeEm', 'grimlock1, you rolled: smack down1 = \[1000\]'))
+        geeEm('VellumTalk', 'I do a [smack down1]')
         geeEm('VellumTalk', '.aliases grimlock1', 
-              ('GeeEm', 'Aliases for grimlock1:   bitchslap=1000, smackdown=1000'))
-        geeEm('VellumTalk', '.unalias grimlock1 smackdown', 
-              ('GeeEm', 'grimlock1, removed your alias for smackdown'))
+              ('GeeEm', 'Aliases for grimlock1:   bitchslap=1000, smack down1=1000'))
+        geeEm('VellumTalk', '.unalias grimlock1 "smack down1"', 
+              ('GeeEm', 'grimlock1, removed your alias for smack down1'))
         geeEm('VellumTalk', '.aliases grimlock1', 
               ('GeeEm', 'Aliases for grimlock1:   bitchslap=1000'))
+
+    def test_botSignon(self):
+        """
+        When the bot signs on, it joins the right channels and such
+        """
+        # clean out the defaultSession, so as to test its creation
+        self.vt.defaultSession = None
+        self.vt.factory = irc.VellumTalkFactory('#vellum')
+        self.vt.signedOn()
+        self.assertTrue(self.vt.defaultSession.isDefaultSession)
+
+    def test_botJoinLeave(self):
+        """
+        When the bot joins a channel, users in there are hooked up correctly.
+        When it leaves, they are unhooked.
+        """
+        self.vt.responding = 0
+        self.vt.joined("#xyz")
+        _xyz = self.vt.findSessions(u'#xyz')[0]
+        self.assertEqual(_xyz.name, u'#xyz')
+        self.assertEqual(self.vt.responding, 1)
+
+        # When IRC sends us some names, check that the box is aware of them.
+        self.vt.irc_RPL_NAMREPLY(u'_ignored1_', (u'_ignored2_', u'_ignored3_', u'#xyz', 
+            u'Player1 Player2 Player3'))
+        subs = sorted(map(operator.attrgetter('name'), _xyz.subSessions))
+        self.assertEqual(subs, [u'Player1', u'Player2', u'Player3'])
+
+        # bot leaves
+        self.vt.left('#xyz')
+        self.assertEqual(self.vt.findSessions(u'#xyz'),
+                [self.vt.defaultSession])
 
     def test_joinKickLeaveQuit(self):
         """
@@ -78,32 +119,32 @@ class IRCTestCase(util.BotTestCase):
         t3 = self.vt.findSessions("#testing3")[0]
 
         self.vt.userJoined("Player", "#testing1")
-        self.assertEqual(len(t1.nicks), 1)
+        self.assertEqual(len(t1.subSessions), 1)
 
         self.vt.userJoined("Player", "#testing2")
-        self.assertEqual(len(t1.nicks), 1)
-        self.assertEqual(len(t2.nicks), 1)
+        self.assertEqual(len(t1.subSessions), 1)
+        self.assertEqual(len(t2.subSessions), 1)
 
         self.vt.userKicked("Player", "#testing1", "GM", "f u")
-        self.assertEqual(len(t1.nicks), 0)
-        self.assertEqual(len(t2.nicks), 1)
+        self.assertEqual(len(t1.subSessions), 0)
+        self.assertEqual(len(t2.subSessions), 1)
 
         self.vt.userJoined("Player", "#testing3")
-        self.assertEqual(len(t3.nicks), 1)
+        self.assertEqual(len(t3.subSessions), 1)
 
         self.vt.userLeft("Player", "#testing3")
-        self.assertEqual(len(t3.nicks), 0)
-        self.assertEqual(len(t2.nicks), 1)
-        self.assertEqual(len(t1.nicks), 0)
+        self.assertEqual(len(t3.subSessions), 0)
+        self.assertEqual(len(t2.subSessions), 1)
+        self.assertEqual(len(t1.subSessions), 0)
 
         self.vt.userJoined("Player", "#testing3")
-        self.assertEqual(len(t3.nicks), 1)
-        self.assertEqual(len(t2.nicks), 1)
+        self.assertEqual(len(t3.subSessions), 1)
+        self.assertEqual(len(t2.subSessions), 1)
 
         self.vt.userQuit("Player", "f u too")
-        self.assertEqual(len(t3.nicks), 0)
-        self.assertEqual(len(t2.nicks), 0)
-        self.assertEqual(len(t1.nicks), 0)
+        self.assertEqual(len(t3.subSessions), 0)
+        self.assertEqual(len(t2.subSessions), 0)
+        self.assertEqual(len(t1.subSessions), 0)
 
     def test_renames(self):
         """
@@ -112,16 +153,31 @@ class IRCTestCase(util.BotTestCase):
         """
         self.vt.userJoined("Player", "#testing1")
         self.vt.userJoined("Player", "#testing2")
+
+        # make sure there is exactly one user named Player right now in the
+        # database
+        self.assertTrue(self.vt.store.find(User, 
+            User.name==u'Player').one() is not None)
+        # ... and none named Player1
+        self.assertTrue(self.vt.store.find(User, 
+            User.name==u'Player1').one() is None)
+
         t1 = self.vt.findSessions("#testing1")[0]
         t2 = self.vt.findSessions("#testing2")[0]
-        self.assertEqual(list(t1.nicks)[0], "Player")
-        self.assertEqual(list(t2.nicks)[0], "Player")
-        self.assertEqual(len(t1.nicks), 1)
-        self.assertEqual(len(t2.nicks), 1)
+        self.assertEqual(list(t1.subSessions)[0].name, u"Player")
+        self.assertEqual(list(t2.subSessions)[0].name, u"Player")
+        self.assertEqual(len(t1.subSessions), 1)
+        self.assertEqual(len(t2.subSessions), 1)
 
         self.vt.userRenamed("Player", "Player1")
-        self.assertEqual(list(t1.nicks)[0], "Player1")
-        self.assertEqual(list(t2.nicks)[0], "Player1")
+        self.assertEqual(list(t1.subSessions)[0].name, "Player1")
+        self.assertEqual(list(t2.subSessions)[0].name, "Player1")
+
+        # same set of assertions about the database as before, in reverse
+        self.assertTrue(self.vt.store.find(User, 
+            User.name==u'Player').one() is None)
+        self.assertTrue(self.vt.store.find(User, 
+            User.name==u'Player1').one() is not None)
 
     def test_observers(self):
         """
@@ -129,8 +185,14 @@ class IRCTestCase(util.BotTestCase):
         messages, sometimes) when observing a channel.
         """
         player = lambda *a, **kw: self.anyone('Player', *a, **kw)
+        superman = lambda *a, **kw: self.anyone('Superman', *a, **kw)
         player2 = lambda *a, **kw: self.anyone('Player2', *a, **kw)
         geeEm = lambda *a, **kw: self.anyone('GeeEm', *a, **kw)
+
+        uplayer = self.addUser(u'Player')
+        uplayer2 = self.addUser(u'Player2')
+        ugeeEm = self.addUser(u'GeeEm')
+
         geeEm('#testing', '.gm', 
               ('#testing', r'GeeEm is now a GM and will observe private messages for session #testing'))
 
@@ -141,7 +203,8 @@ class IRCTestCase(util.BotTestCase):
            )
 
         self.vt.userJoined("Player", "#testing")
-        self.assertEqual(list(self.vt.findSessions("#testing")[0].nicks)[0], "Player")
+        self.assertEqual(list(self.vt.findSessions("#testing")[0].subSessions)[0],
+                uplayer)
         s0 = self.vt.findSessions("testing")[0]
 
         # players who ARE in the same channel as the gm get observed:
@@ -158,8 +221,8 @@ class IRCTestCase(util.BotTestCase):
 
         # testunobserved
         self.vt.userLeft('GeeEm', '#testing')
-        player('VellumTalk', '[stabtastic 23]', 
-           ('Player', r'Player, you rolled: stabtastic 23 = \[23\]')
+        superman('VellumTalk', '[stabtastic 23]', 
+           ('Superman', r'Superman, you rolled: stabtastic 23 = \[23\]')
            )
 
     def test_nickOrderSensitive(self):
@@ -188,15 +251,17 @@ class IRCTestCase(util.BotTestCase):
             self.vt.userLeft(playerName, "#testing")
             self.vt.userLeft(gmName, "#testing")
         # try a few different nicks so we get a different arbitrary sort order
-        tryTheseNicks("GeeEm", "Player")
-        tryTheseNicks("MFen", "MoonFallen")
-        tryTheseNicks("aa", "bbb")
+        tryTheseNicks(u"GeeEm", u"Player")
+        tryTheseNicks(u"MFen", u"MoonFallen")
+        tryTheseNicks(u"bbb", u"aa")
 
     def test_nickCaseFolding(self):
         """
         IRC servers that send me the nick lowercased will still match
         """
         player = lambda *a, **kw: self.anyone('Player', *a, **kw)
+        self.addUser(u'Player')
+
         player("VellumTalk", ".hello",
                 ("Player", "Hello Player."))
         player("vellumtalk", ".hello",
@@ -214,5 +279,6 @@ class IRCTestCase(util.BotTestCase):
             lines.append((nick, message[n*irc.MAX_LINE:(n+1)*irc.MAX_LINE]+r'$'))
 
         veryLongNick = lambda *a, **kw: self.anyone(nick, *a, **kw)
+        self.addUser(nick.decode('utf-8'))
 
         veryLongNick("VellumTalk", ".hello", *lines)

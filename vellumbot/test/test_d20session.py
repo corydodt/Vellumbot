@@ -19,6 +19,7 @@ class TestD20Session(util.BotTestCase):
         vellumbot.server.irc.TESTING = True
         geeEm = lambda *a, **kw: self.anyone('GeeEm', *a, **kw)
         player = lambda *a, **kw: self.anyone('Player', *a, **kw)
+        self.addUser(u'GeeEm')
 
         self.vt.userJoined("Player", "#testing")
 
@@ -89,11 +90,14 @@ class TestD20Session(util.BotTestCase):
         """
         vellumbot.server.session.TESTING = True
         vellumbot.server.irc.TESTING = True
+        self.addUser(u'Player')
         self.anyone('Player', '#testing', '.lookup feat cleave', 
                 ('#testing', 'I don\'t know how to look those things up.'))
 
     def test_initiative(self):
         geeEm = lambda *a, **kw: self.anyone('GeeEm', *a, **kw)
+        self.addUser(u'GeeEm')
+
         geeEm('VellumTalk', '.inits', ('GeeEm', r'INITIATIVES: \(none\)'))
         geeEm('#testing', '.combat', 
             ('#testing', r'\*\* Beginning combat \*\*'))
