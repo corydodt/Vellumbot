@@ -170,8 +170,10 @@ class IRCTestCase(util.BotTestCase):
         self.assertEqual(len(t2.subSessions), 1)
 
         self.vt.userRenamed("Player", "Player1")
-        self.assertEqual(list(t1.subSessions)[0].name, "Player1")
-        self.assertEqual(list(t2.subSessions)[0].name, "Player1")
+        self.assertEqual(len(list(t1.subSessions)), 1)
+        self.assertEqual(len(list(t2.subSessions)), 1)
+        self.assertEqual(list(t1.subSessions)[0].name, u"Player1")
+        self.assertEqual(list(t2.subSessions)[0].name, u"Player1")
 
         # same set of assertions about the database as before, in reverse
         self.assertTrue(self.vt.store.find(User, 
