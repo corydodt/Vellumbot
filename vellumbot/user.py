@@ -92,12 +92,12 @@ def parseURI(uri):
     """
     if uri.startswith('sqlite:'):
         if uri[7:]:
-            fn = '/' + uri[7:].strip().lstrip('/')
+            fn = uri[7:].strip().lstrip('/')
         else:
             fn = None
     else:
         uri = 'sqlite:%s' % (uri,)
-        fn = uri
+        fn = uri[7:]
     return (fn, uri)
 
 def userDatabase(uri=DB_FILE_NAME):
