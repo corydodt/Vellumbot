@@ -2,15 +2,65 @@
 Users and user acquisition
 """
 from storm import locals
+from zope.interface import implements
 
 from .server.fs import fs
+from .server.interface import IMessageRecipient
 
 
 class User(object):
     """A User"""
     __storm_table__ = 'user'
-    id = locals.Int(primary=True)                #
-    name = locals.Unicode()
+    __storm_primary__ = ('name', 'network')
+    name = locals.Unicode()       # nick of the user
+    network = locals.Unicode(default=u'TODO FIXME')    # TODO - see vellumbot.server.irc.VellumTalk.signedOn
+    encoding = locals.Unicode(default=u'utf-8')   # the preferred encoding of the user
+    implements(IMessageRecipient)
+
+    def __repr__(self):
+        return '<%s named %s@%s>' % (self.__class__.__name__, self.name, self.network)
+
+    def getAliases(self, default={}):
+        """
+        All the user's aliases as a dict
+        """
+        ret = {}
+        for a in self.aliases:
+            ret[a.words] = a.expression
+        return ret
+
+    def setAlias(self, words, expression):
+        """
+        Create a new alias for the user or redefine an existing
+        """
+        assert type(words) is tuple
+        words = u' '.join(words)
+        store = locals.Store.of(self)
+        al = store.find(Alias, Alias.user==self, Alias.words==words).one()
+        if al is None:
+            al = Alias()
+            al.user = self
+            al.words = words
+            al.expression = expression
+            store.add(al)
+        else:
+            al.expression = expression
+        store.commit()
+
+    def removeAlias(self, words):
+        """
+        Remove an alias from my list and from the database
+        """
+        l = self.aliases.count()
+        store = locals.Store.of(self)
+        al = store.find(Alias, Alias.user==self, Alias.words==words).one()
+        if al is not None:
+            self.aliases.remove(al)
+            store.remove(al)
+            store.commit()
+        assert store.find(Alias, 
+                Alias.user==self, Alias.words==words).one() is None
+        return al
 
 
 class Alias(object):
@@ -18,13 +68,19 @@ class Alias(object):
     A user-defined dice macro
     """
     __storm_table__ = 'alias'
-    __storm_primary__ = ('userId', 'words')
-    userId = locals.Int()
+    __storm_primary__ = ('userName', 'userNetwork', 'words')
+    userName = locals.Unicode()
+    userNetwork = locals.Unicode()
     words = locals.Unicode()
     expression = locals.Unicode()
-    user = locals.Reference(userId, User.id)
+    user = locals.Reference((userName, userNetwork), (User.name, User.network))
 
-User.aliases = locals.ReferenceSet( User.id, Alias.userId,)
+    def __repr__(self):
+        return u'<Alias %s=%s of %r>' % (self.words, self.expression,
+                self.user)
+
+User.aliases = locals.ReferenceSet((User.name, User.network), 
+        (Alias.userName, Alias.userNetwork))
 
 
 DB_FILE_NAME = 'sqlite:' + fs.userdb

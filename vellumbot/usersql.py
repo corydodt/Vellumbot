@@ -8,17 +8,20 @@ import sys
 
 SQL_SCRIPT = ['''
 CREATE TABLE user (
-    id INTEGER PRIMARY KEY,
-    name varchar(100)
+    name varchar(100),
+    network varchar(100),
+    encoding varchar(100),
+    PRIMARY KEY (name, network)
 );
 ''',
 
 '''
 CREATE TABLE alias (
-    userId INTEGER references user(id),
+    userName varchar(100) references user(name),
+    userNetwork varchar(100) references user(network),
     words varchar(255),
     expression varchar(255),
-    PRIMARY KEY (userId, words)
+    PRIMARY KEY (userName, userNetwork, words)
 );
 ''',
 

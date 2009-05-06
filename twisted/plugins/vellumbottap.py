@@ -42,7 +42,7 @@ class VellumbotServerMaker(object):
         from vellumbot.server.irc import VellumTalkFactory
         from twisted.application.internet import TCPClient
         f = VellumTalkFactory('#vellum')
-        f.store = user.userDatabase()
+        f.store = userDatabase()
         svc = TCPClient(options['server'], int(options['port']), f)
         return svc
 
