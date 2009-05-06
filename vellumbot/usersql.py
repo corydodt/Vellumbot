@@ -27,8 +27,13 @@ CREATE TABLE alias (
 
 '''
 CREATE TABLE session (
-    name varchar(255) PRIMARY KEY
+    name varchar(100) PRIMARY KEY,
+    encoding varchar(100)
 );
+''',
+
+'''
+INSERT INTO session VALUES ('#@@default@@', 'utf-8');
 ''',
 
 ]
