@@ -58,10 +58,12 @@ class VellumTalk(irc.IRCClient):
         # reset wtf's every 30 seconds 
         self.resetter = task.LoopingCall(self._resetWtfCount)
         self.resetter.start(30.0)
-        self.sessions = []
+
+        self.sessions = []           # list of the sessions the bot is in
         self.defaultSession = None
         # TODO - analyze, do i *really* need responding?
-        self.responding = 0 # don't start responding until i'm in a channel
+        self.responding = 0          # don't start responding until I join a
+                                     # channel
         # no irc.IRCClient.__init__ to call
 
     def findSessions(self, channel):
@@ -288,6 +290,9 @@ class VellumTalkFactory(protocol.ClientFactory):
     """A factory for VellumTalks.
 
     A new protocol instance will be created each time we connect to the server.
+
+    VellumTalkFactory(channel) => a bot factory which will join the given
+    channel after connecting.
     """
 
     # the class of the protocol to build when new connection is made

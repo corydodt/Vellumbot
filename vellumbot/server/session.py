@@ -27,20 +27,10 @@ class MissingRecipients(Exception):
     """
 
 
-class ISessionResponse(Interface):
-    """
-    A source of messages to send to one or more channels, in response to a session
-    action.
-    """
-    def getMessages():
-        """
-        @returns the messages as a list of 2-tuples: (recipient, message)
-        """
-
-
 class ResponseGroup(object):
     """
-    A response that is built of other responses
+    A response that is built of other responses.  This represents a series of
+    different (related) messages sent to one or more people.
     """
     implements(ISessionResponse)
     def __init__(self, *responses):
@@ -65,7 +55,10 @@ class ResponseGroup(object):
 
 
 class Response(object):
-    """A response vector with the channels the response should be sent to"""
+    """
+    A response vector with the channels the response should be sent to.  This
+    usually represents a single message, sent simultaneously to many people.
+    """
     implements(ISessionResponse)
     def __init__(self, text, request, redirectTo=None):
         self.text = text
@@ -122,7 +115,7 @@ class Session(object):
 
     def respondTo_lookup(self, req, rest):
         """
-        Set the speaker as the gm for this game session.
+        Do a search and report results found
         """
         r = list(rest)
         what = r.pop(0)

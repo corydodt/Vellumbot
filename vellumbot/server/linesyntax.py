@@ -41,8 +41,6 @@ command                 := (hail/commandLeader), ws, !, commandIdentifier, ([ \t
 
 commandRoot             := ws,command
 
-
-
 <word>                  := [a-zA-Z0-9{}\/';":.,!@#$%^&*()-=_+]+  
 nonDiceWords            := (?-(diceExpression),word,ws)+  
 
@@ -166,6 +164,7 @@ class Sentence(object):
 
         return ''.join(ret)
 
+
 class SentenceProcessor(CommandProcessor):
     def nonCommand(self, (t,s1,s2,sub), buffer):
         return buffer
@@ -231,7 +230,6 @@ class VerbPhrase(object):
                 a(' ')
             a(str(self.diceExpression))
         return ''.join(ret)
-
 
 
 class VerbPhraseProcessor(disp.DispatchProcessor):

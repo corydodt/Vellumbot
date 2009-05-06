@@ -84,7 +84,8 @@ class ResponseGroupTestCase(unittest.TestCase):
 
         self.assertEqual(l(rg), expected)
 
-        # add responses - textual
+        # add responses - textual (this is no longer allowed - test for
+        # assertion)
         rg = session.ResponseGroup()
         rg.addResponse(['whatever 1', self.req])
         rg.addResponse(['whatever 2', self.req])

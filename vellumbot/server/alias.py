@@ -47,7 +47,7 @@ def registerAliasHook(alias, hook):
     take two arguments, username and evaluated result.
 
     # def rememberInitiative(user, initroll):
-    #     iniatives.append((initroll, user))
+    # ....iniatives.append((initroll, user))
     # >>> addAliasHook(('init',), rememberInitiative)
 
     Now rememberInitiative will get called any time someone uses "[init ..]"
