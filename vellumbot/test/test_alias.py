@@ -1,16 +1,20 @@
 import unittest
 from ..server import alias
+from .. import user
 from playtools import dice, diceparser
 
 class AliasTestCase(unittest.TestCase):
+    def setUp(self):
+        self.store = user.userDatabase('sqlite:')
+
     def test_formatAlias(self):
         """
         Used aliases can be displayed as a human-readable result
         """
-        a = 'foobie bletch'
-        v1 = ['foo', 'bar']
-        v2 = []
-        v3 = ['foo']
+        a = u'foobie bletch'
+        v1 = (u'foo', u'bar')
+        v2 = ()
+        v3 = (u'foo',)
         parsed_dice = diceparser.parseDice('1d20x3')
         parsed_dice2 = diceparser.parseDice('1d20x3sort')
         parsed_dice3 = ''
@@ -36,62 +40,76 @@ class AliasTestCase(unittest.TestCase):
         fmtd = alias.formatAlias(a, v2, results3[:], parsed_dice4, 2) 
         self.assertEqual(fmtd, 'foobie bletch, you rolled: 3d6+2 +2 = [3+4+5+2+2 = 16]')
 
-    def test_getResult(self):
-        """
-        Dice results can be rolled and their values are accurate
-        """
-        aliases = {}
-        # junk
-        self.assertTrue(alias.getResult('anything', 'foo', aliases) is None)
-        # define an alias
-        _exp = diceparser.parseDice('1d1')
-        self.assertEqual(alias.getResult('anything', 'foo', aliases, _exp)[0].sum(), 1)
-        # junk after defining real aliases
-        self.assertTrue(alias.getResult('anything', 'bar', aliases) is None)
-        _exp = diceparser.parseDice('500')
-        # define and recall an alias
-        self.assertEqual(alias.getResult('anything', 'bar', aliases, _exp)[0].sum(), 500)
-        self.assertEqual(alias.getResult('anything', 'bar', aliases)[0].sum(), 500)
-        # recall the first alias
-        self.assertEqual(alias.getResult('anything', 'foo', aliases)[0].sum(), 1)
-        _exp = diceparser.parseDice('5')
-        # redefine and recall an alias
-        self.assertEqual(alias.getResult('anything', 'foo', aliases, _exp)[0].sum(), 5)
-        self.assertEqual(alias.getResult('anything', 'foo', aliases)[0].sum(), 5)
-        # temp modifier
-        self.assertEqual(alias.getResult('anything', 'foo', aliases, None, 0)[0].sum(), 5)
-
     def test_shortFormatAliases(self):
         """
         Aliases can be formatted into human-readable strings that are short
         """
-        aliases = {'foobar': {('buncha', 'crunch'): '2d20+20',
-                              ('yums',): '1234'
-                              },
-                   'empty': {},
-                   }
-        self.assertEqual(alias.shortFormatAliases('foobar', aliases), (
-                'buncha crunch=2d20+20, yums=1234'))
-        self.assertEqual(alias.shortFormatAliases('empty', aliases), '(none)')
-        self.assertEqual(alias.shortFormatAliases('NOBODY', aliases), '(none)')
+        add = lambda *a: [self.store.add(x) for x in a]
+        foobar = user.User()
+        buncha = user.Alias()
+        yums = user.Alias()
+        add(foobar, buncha, yums)
+        foobar.aliases = [user.Alias(), user.Alias()]
+        foobar.aliases[0].words = u'buncha crunch'
+        foobar.aliases[0].expression = u'2d20+20'
+        foobar.aliases[1].words = u'yums'
+        foobar.aliases[1].expression = u'1234'
+        self.assertEqual(alias.shortFormatAliases(foobar),
+                u'buncha crunch=2d20+20, yums=1234')
+
+        empty = user.User()
+        add(empty)
+        self.assertEqual(alias.shortFormatAliases(empty), '(none)')
+
+    def test_getResult(self):
+        """
+        Dice results can be rolled and their values are accurate
+        """
+        ne1 = user.User()
+        ne1.name = u'ne1'
+        self.store.add(ne1)
+        self.store.commit()
+        # junk
+        self.assertTrue(alias.getResult(ne1, (u'foo',), ) is None)
+        # define an alias
+        _exp = diceparser.parseDice(u'1d1')
+        self.assertEqual(alias.getResult(ne1, (u'sha', u'zam'), _exp)[0].sum(), 1)
+        # junk after defining real aliases
+        self.assertTrue(alias.getResult(ne1, (u'bar',), ) is None)
+        _exp = diceparser.parseDice('500')
+        # define and recall an alias
+        self.assertEqual(alias.getResult(ne1, (u'bar',), _exp)[0].sum(), 500)
+        self.assertEqual(alias.getResult(ne1, (u'bar',), )[0].sum(), 500)
+        # recall the first alias
+        self.assertEqual(alias.getResult(ne1, (u'sha', u'zam'), )[0].sum(), 1)
+        _exp = diceparser.parseDice('5')
+        # redefine and recall an alias
+        self.assertEqual(alias.getResult(ne1, (u'sha', u'zam'), _exp)[0].sum(), 5)
+        self.assertEqual(alias.getResult(ne1, (u'sha', u'zam'), )[0].sum(), 5)
+        # temp modifier
+        self.assertEqual(alias.getResult(ne1, (u'sha', u'zam'), None, 0)[0].sum(), 5)
 
     def test_resolve(self):
         """
         A stringy version of a result or None is returned by resolve
         """
-        aliases = {}
-        _exp = diceparser.parseDice('1d1')
-        actor = 'GeeEm'
-        verbs = tuple('smack down'.split())
+        ne1 = user.User()
+        ne1.name = u'GeeEm'
+        ne1.network = u'FIXME TODO'
+        self.store.add(ne1)
+        self.store.commit()
 
-        formatted = alias.resolve(actor, verbs, parsed_dice=_exp, 
-                temp_modifier=2, aliases=aliases)
+        _exp = diceparser.parseDice('1d1')
+        verbs = (u'smack', u'down')
+
+        formatted = alias.resolve(ne1, verbs, parsed_dice=_exp, 
+                temp_modifier=2, )
         self.assertEqual(formatted, 'GeeEm, you rolled: smack down d1 +2 = [1+2 = 3]')
 
         _exp = None
         verbs = tuple('this no Alias iS'.split())
-        formatted = alias.resolve(actor, verbs, parsed_dice = _exp,
-                temp_modifier=None, aliases=aliases)
+        formatted = alias.resolve(ne1, verbs, parsed_dice = _exp,
+                temp_modifier=None, )
         self.assertEqual(formatted, None)
 
     def test_aliasHooks(self):
@@ -108,21 +126,25 @@ class AliasTestCase(unittest.TestCase):
             We take a string for the user who invoked the alias and an object
             which is the structured result of the roll
             """
-            res.append((user, rolled[0].sum()))
+            res.append((user.name, rolled[0].sum()))
 
-        actor = 'testing alias hooks'
-        verbs = 'smack down'
+        ne1 = user.User()
+        ne1.name = u'testing alias hooks'
+        ne1.network = u'FIXME TODO'
+        self.store.add(ne1)
+        self.store.commit()
+        verbs = (u'smack', u'down')
 
         # test that nothing happens when it is not registered..
-        _dontcare = alias.resolve(actor, verbs, parsed_dice=_exp, 
-                temp_modifier=2, aliases=aliases)
+        _dontcare = alias.resolve(ne1, verbs, parsed_dice=_exp, 
+                temp_modifier=2)
         self.assertEqual(res, [], 
                 "should not have called smackDownHook here but did")
 
         # now register and do it again
-        alias.registerAliasHook('smack down', smackDownHook)
-        _dontcare = alias.resolve(actor, verbs, parsed_dice=_exp, 
-                temp_modifier=2, aliases=aliases)
-        self.assertEqual(res, [('testing alias hooks', 3)], 
+        alias.registerAliasHook((u'smack', u'down'), smackDownHook)
+        _dontcare = alias.resolve(ne1, verbs, parsed_dice=_exp, 
+                temp_modifier=2, )
+        self.assertEqual(res, [(u'testing alias hooks', 3)], 
                 "should have called smackDownHook here but did not")
 
