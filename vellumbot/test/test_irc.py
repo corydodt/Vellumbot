@@ -170,8 +170,8 @@ class IRCTestCase(util.BotTestCase):
         self.assertEqual(len(t2.subSessions), 1)
 
         self.vt.userRenamed("Player", "Player1")
-        self.assertEqual(len(list(t1.subSessions)), 1)
-        self.assertEqual(len(list(t2.subSessions)), 1)
+        self.assertEqual(len(list(t1.subSessions)), 1, "More (or less) than 1 Player in #testing1 after rename")
+        self.assertEqual(len(list(t2.subSessions)), 1, "More (or less) than 1 Player in #testing2 after rename")
         self.assertEqual(list(t1.subSessions)[0].name, u"Player1")
         self.assertEqual(list(t2.subSessions)[0].name, u"Player1")
 

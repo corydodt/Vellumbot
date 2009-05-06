@@ -291,7 +291,8 @@ class Session(object):
             # one public channel, which I don't think is possible.
             ss = Store.of(self).find(Session, Session.name == name).one()
         else:
-            ss = Session(); ss.name = name 
+            ss = User()
+            ss.name = name 
         assert IMessageRecipient.providedBy(ss)
         return ss
 

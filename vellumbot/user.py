@@ -17,6 +17,12 @@ class User(object):
     encoding = locals.Unicode(default=u'utf-8')   # the preferred encoding of the user
     implements(IMessageRecipient)
 
+    def __eq__(self, other):
+        return (self.name, self.network) == (other.name, other.network)
+
+    def __hash__(self):
+        return hash((self.name, self.network))
+
     def __repr__(self):
         return '<%s named %s@%s>' % (self.__class__.__name__, self.name, self.network)
 
