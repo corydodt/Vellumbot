@@ -143,7 +143,12 @@ class VellumTalk(irc.IRCClient):
         """Called when bot has succesfully signed on to server."""
         # create a session to respond to private messages from nicks
         # not in any channel I'm in
-        self.defaultSession = d20session.D20Session(session.NO_CHANNEL)
+
+        self.ircNetwork = u'TODO' # TODO 
+
+        self.defaultSession = self.store.find(d20session.D20Session,
+                d20session.D20Session.name == u'#@@default@@').one()
+        self.defaultSession.isDefaultSession = True
         # join my default channel
         self.join(self.factory.channel)
 

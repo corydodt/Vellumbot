@@ -173,8 +173,9 @@ class BotTestCase(unittest.TestCase, DiffTestCaseMixin):
         vt.store = user.userDatabase('sqlite:')
 
         vt.performLogin = 0
-        vt.defaultSession = d20session.D20Session(isDefaultSession=True)
-        vt.store.add(vt.defaultSession)
+        vt.  defaultSession =   vt.store.find(d20session.D20Session,
+                d20session.D20Session.name == u'#@@default@@').one()
+        vt.defaultSession.isDefaultSession = True
         vt.joined(u"#testing")
         vt.makeConnection(self.transport)
 
