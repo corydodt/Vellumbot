@@ -126,5 +126,6 @@ def userDatabase(uri=DB_FILE_NAME):
         from .usersql import SQL_SCRIPT
         for sql in SQL_SCRIPT:
             theStore.execute(sql)
+    assert theStore is not None
     return theStore
 
