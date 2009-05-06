@@ -13,4 +13,5 @@ class UserTestCase(unittest.TestCase):
         """
         self.assertEqual(user.parseURI('foo.db'), ('foo.db', 'sqlite:foo.db', ))
         self.assertEqual(user.parseURI('sqlite:foo.db'), ('foo.db', 'sqlite:foo.db', ))
+        self.assertEqual(user.parseURI('sqlite://foo.db'), ('/foo.db', 'sqlite://foo.db', ))
 

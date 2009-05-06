@@ -92,7 +92,9 @@ def parseURI(uri):
     """
     if uri.startswith('sqlite:'):
         if uri[7:]:
-            fn = uri[7:].strip().lstrip('/')
+            fn = uri[7:].strip()
+            if fn.startswith('/'):
+                fn = '/' + fn.lstrip('/')
         else:
             fn = None
     else:
