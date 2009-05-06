@@ -13,6 +13,7 @@ from twisted.test.proto_helpers import StringTransport
 
 from ..server import d20session, session, alias
 from ..server.irc import VellumTalk
+from .. import user
 
 
 # FIXME - not needed in python 2.6
@@ -166,17 +167,26 @@ class BotTestCase(unittest.TestCase, DiffTestCaseMixin):
     Tests can be run using the anyone() function
     """
     def setUp(self):
-        # TODO - move d20-specific tests, e.g. init and other alias hooks?
-        # save off and clear alias.aliases, since it gets persisted # FIXME
-        orig_aliases = alias.aliases
-        alias.aliases = {}
-
         self.transport = StringTransport()
+
         vt = self.vt = VellumTalk()
+        vt.store = user.userDatabase('sqlite:')
+
         vt.performLogin = 0
-        vt.joined("#testing")
-        vt.defaultSession = d20session.D20Session(session.NO_CHANNEL)
+        vt.defaultSession = d20session.D20Session(isDefaultSession=True)
+        vt.store.add(vt.defaultSession)
+        vt.joined(u"#testing")
         vt.makeConnection(self.transport)
+
+    def addUser(self, name):
+        """
+        Convenience to add and return a user
+        """
+        u = user.User()
+        u.name = name
+        self.vt.store.add(u)
+        self.vt.store.commit()
+        return u
 
     def tearDown(self):
         self.vt.resetter.stop()
