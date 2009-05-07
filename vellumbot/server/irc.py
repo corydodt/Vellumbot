@@ -226,9 +226,9 @@ class VellumTalk(irc.IRCClient):
         quitting).
         """
         sessions = self.findSessions(user)
-        for s in sessions:
-            user = user.decode(s.encoding)
-            self.sendResponse(s.removeNick(user))
+        for ss in sessions:
+            user = user.decode(ss.encoding)
+            self.sendResponse(ss.removeNick(user))
 
     def userKicked(self, user, channel, kicker, kickmessage):
         ss = self.findSessions(channel)[0]
@@ -241,10 +241,10 @@ class VellumTalk(irc.IRCClient):
         watching.
         """
         sessions = self.findSessions(old)
-        for s in sessions:
-            old = old.decode(s.encoding)
-            new = new.decode(s.encoding)
-            self.sendResponse(s.rename(old, new))
+        for ss in sessions:
+            old = old.decode(ss.encoding)
+            new = new.decode(ss.encoding)
+            self.sendResponse(ss.rename(old, new))
 
     def irc_RPL_NAMREPLY(self, prefix, (user, _, channel, names)):
         """
@@ -258,7 +258,8 @@ class VellumTalk(irc.IRCClient):
                 nicks.append(nick[1:])
 
         ss = self.findSessions(channel)[0]
-        self.sendResponse(ss.addNick(*nicks))
+        _nicks = [n.decode(ss.encoding) for n in nicks]
+        self.sendResponse(ss.addNick(*_nicks))
 
     def irc_RPL_ENDOFNAMES(self, prefix, params):
         pass
@@ -283,41 +284,41 @@ class VellumTalk(irc.IRCClient):
         observers = []
         if channel.lower() == self.nickname.lower():
             respondTo = user
-            ses = self.defaultSession
+            ss = self.defaultSession
             for s in self.findSessions(user):
                 for o in s.observers:
-                    observers.append(o.name.decode(ses.encoding))
+                    observers.append(o.name.decode(ss.encoding))
         else:
             respondTo = channel
-            ses = self.findSessions(channel)[0]
+            ss = self.findSessions(channel)[0]
 
-        msg = msg.decode(ses.encoding)
+        msg = msg.decode(ss.encoding)
         try:
             sentence = linesyntax.parseSentence(msg)
         except RuntimeError:
             return
 
-        user = user.decode(ses.encoding)
-        respondTo = respondTo.decode(ses.encoding)
+        user = user.decode(ss.encoding)
+        respondTo = respondTo.decode(ss.encoding)
         req = Request(user, respondTo, msg)
         req.sentence = sentence
 
-        _observers = [o.decode(ses.encoding) for o in observers]
+        _observers = [o.decode(ss.encoding) for o in observers]
         if sentence.command:
             # ignore people talking to other people
             if sentence.botName is not None and sentence.botName != self.nickname.lower():
                 return
 
             if respondTo == user:
-                response = ses.privateCommand(req, *_observers)
+                response = ss.privateCommand(req, *_observers)
             else:
-                response = ses.command(req)
+                response = ss.command(req)
             self.sendResponse(response)
         elif sentence.verbPhrases:
             if respondTo == user:
-                response = ses.privateInteraction(req, *_observers)
+                response = ss.privateInteraction(req, *_observers)
             else:
-                response = ses.interaction(req)
+                response = ss.interaction(req)
             self.sendResponse(response)
         else:
             pass

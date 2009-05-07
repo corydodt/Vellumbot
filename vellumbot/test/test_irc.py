@@ -113,8 +113,8 @@ class IRCTestCase(util.BotTestCase):
         self.assertEqual(self.vt.responding, 1)
 
         # When IRC sends us some names, check that the box is aware of them.
-        self.vt.irc_RPL_NAMREPLY(u'_ignored1_', (u'_ignored2_', u'_ignored3_', u'#xyz', 
-            u'Player1 Player2 Player3'))
+        self.vt.irc_RPL_NAMREPLY('_ignored1_', ('_ignored2_', '_ignored3_', '#xyz', 
+            'Player1 Player2 Player3'))
         subs = sorted(map(operator.attrgetter('name'), _xyz.subSessions))
         self.assertEqual(subs, [u'Player1', u'Player2', u'Player3'])
 
