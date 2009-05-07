@@ -34,6 +34,10 @@ class D20Session(session.Session):
     __storm_loaded__ = __init__  
 
     def doInitiative(self, user, result):
+        for n, init in enumerate(self.initiatives):
+            if init.user == user.name:
+                del self.initiatives[n]
+                break
         self.initiatives.addSorted(InitRoll(result[0].sum(), user.name))
 
     def _lookup_anything(self, req, terms, domain):

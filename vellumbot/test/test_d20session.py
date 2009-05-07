@@ -138,6 +138,12 @@ class TestD20Session(util.BotTestCase):
         geeEm('#testing', '.inits', 
               ('#testing', r'INITIATIVES: Hamlet/20 \|\| Ophelia/18 \|\| Yorick/2 \|\| new round \|\| GeeEm/20'))
 
+        # a new initiative for a player should replace the old one
+        geeEm('#testing', '*Ophelia [init 1]',
+              ('#testing', r'Ophelia, you rolled: init 1 = \[1\]'))
+        geeEm('#testing', '.inits', 
+              ('#testing', r'INITIATIVES: Hamlet/20 \|\| Yorick/2 \|\| Ophelia/1 \|\| new round \|\| GeeEm/20'))
+
 
 class TestSortedRing(unittest.TestCase):
     def test_addSorted(self):
@@ -152,6 +158,17 @@ class TestSortedRing(unittest.TestCase):
         self.assertEqual(len(ring), 2)
         self.assertEqual(ring[0], 1)
         self.assertEqual(ring[1], 4)
+
+    def test_contains(self):
+        """
+        We can answer "x in ring"
+        """
+        alice = 'alice'
+        bob = 'bob'
+        carl = 'carl'
+        ring = d20session.SortedRing([alice, bob])
+        self.assertTrue(alice in ring)
+        self.assertFalse(carl in ring)
 
     def test_identicalAddSort(self):
         """
