@@ -277,8 +277,6 @@ class VellumTalk(irc.IRCClient):
             respondTo = user
             ses = self.defaultSession
             for s in self.findSessions(user):
-                if not hasattr(s, 'observers'):
-                    import pdb; pdb.set_trace()
                 for o in s.observers:
                     observers.append(o.name.decode(ses.encoding))
         else:
