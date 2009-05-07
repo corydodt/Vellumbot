@@ -147,12 +147,10 @@ class SortedRing(object):
     def index(self, item):
         return self.items.index(item)
 
-    def rotate(self, n=None):
+    def rotate(self, n=1):
         """
         Rotate the ring by n (like deque.rotate)
         """
-        if n is None:
-            n = 1
         rot = (self.rotation + n) % len(self.items)
         self.rotation = rot
 
