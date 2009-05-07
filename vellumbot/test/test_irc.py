@@ -1,8 +1,11 @@
 import operator
 
+from twisted.test.proto_helpers import StringTransport
+
 from vellumbot.server import d20session, irc
-from vellumbot.user import User
+from vellumbot.user import User, userDatabase
 import vellumbot.server.session
+
 from . import util
 
 
@@ -74,6 +77,18 @@ class IRCTestCase(util.BotTestCase):
               ('GeeEm', 'grimlock1, removed your alias for smack down1'))
         geeEm('VellumTalk', '.aliases grimlock1', 
               ('GeeEm', 'Aliases for grimlock1:   bitchslap=1000'))
+
+    def test_connectionMade(self):
+        # set up a protocol instance similar to what we do in BotTestCase.setUp
+        transport = StringTransport()
+        vt = irc.VellumTalk()
+        fac = util.FakeFactory()
+        fac.store = userDatabase('sqlite:')
+        vt.factory = fac
+
+        vt.makeConnection(transport)
+        self.assertIdentical(vt.store, fac.store)
+        vt.resetter.stop()
 
     def test_botSignon(self):
         """

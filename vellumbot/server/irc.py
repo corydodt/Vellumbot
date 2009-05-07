@@ -145,6 +145,7 @@ class VellumTalk(irc.IRCClient):
     # callbacks for irc events
     # callbacks for irc events
     def connectionMade(self):
+        self.store = self.factory.store
         irc.IRCClient.connectionMade(self)
 
     def connectionLost(self, reason):

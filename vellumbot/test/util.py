@@ -161,6 +161,12 @@ class ResponseTest:
         return True #?
 
 
+class FakeFactory(object):
+    """
+    VellumTalk factory proxy, it only holds the store attribute
+    """
+
+
 class BotTestCase(unittest.TestCase, DiffTestCaseMixin):
     """
     Set up a VellumTalk bot, have it join #testing and hide the aliases.
@@ -170,14 +176,15 @@ class BotTestCase(unittest.TestCase, DiffTestCaseMixin):
         self.transport = StringTransport()
 
         vt = self.vt = VellumTalk()
-        vt.store = user.userDatabase('sqlite:')
+        vt.factory = FakeFactory()
+        vt.factory.store = user.userDatabase('sqlite:')
 
         vt.performLogin = 0
-        vt.  defaultSession =   vt.store.find(d20session.D20Session,
+        vt.defaultSession = vt.factory.store.find(d20session.D20Session,
                 d20session.D20Session.name == u'#@@default@@').one()
         vt.defaultSession.isDefaultSession = True
-        vt.joined(u"#testing")
         vt.makeConnection(self.transport)
+        vt.joined(u"#testing")
 
     def addUser(self, name):
         """
