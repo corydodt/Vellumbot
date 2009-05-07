@@ -56,6 +56,15 @@ class IRCTestCase(util.BotTestCase):
         geeEm('VellumTalk', '.aliases', 
               ('GeeEm', r'Aliases for GeeEm:   argh=20, foobar=30, kill=20'))
 
+    def test_gibberishCommand(self):
+        """
+        Speaking gibberish commands to the bot does not flail
+        """
+        geeEm = lambda *a, **kw: self.anyone('GeeEm', *a, **kw)
+        ugm = self.addUser(u"GeeEm")
+
+        geeEm('VellumTalk', '.adf91', ('GeeEm', 'wtf!?'))
+
     def test_impersonate(self):
         """
         We can use the * syntax to impersonate another

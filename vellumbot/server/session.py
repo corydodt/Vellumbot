@@ -126,7 +126,7 @@ class Session(object):
         return hash(self.name)
 
     # responses to being hailed by a user
-    def respondTo_DEFAULT(self, request, args):
+    def respondTo_DEFAULT(self, request, actor, args):
         raise UnknownHailError()
 
     def respondTo_lookup(self, req, actor, rest):
