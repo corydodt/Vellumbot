@@ -178,6 +178,7 @@ class BotTestCase(unittest.TestCase, DiffTestCaseMixin):
         vt = self.vt = VellumTalk()
         vt.factory = FakeFactory()
         vt.factory.store = user.userDatabase('sqlite:')
+        vt.factory.serverEncoding = 'utf-8'
 
         vt.performLogin = 0
         vt.defaultSession = vt.factory.store.find(d20session.D20Session,

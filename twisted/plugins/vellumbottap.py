@@ -13,6 +13,7 @@ from vellumbot.user import userDatabase
 class Options(usage.Options):
     optParameters = [['port', 'p', '6667', 'Port to connect to'],
                      ['server', 's', 'irc.freenode.net', 'IRC server to connect to'],
+                     ['serverEncoding', 'e', 'utf-8', 'The preferred encoding of the server we are connecting to'],
                      ]
     optFlags = [['dev', None, 'Enable development features such as /sandbox']]
 
@@ -43,6 +44,7 @@ class VellumbotServerMaker(object):
         from twisted.application.internet import TCPClient
         f = VellumTalkFactory('#vellum')
         f.store = userDatabase()
+        f.serverEncoding = options['serverEncoding']
         svc = TCPClient(options['server'], int(options['port']), f)
         return svc
 
