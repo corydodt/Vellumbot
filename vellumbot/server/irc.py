@@ -146,6 +146,7 @@ class VellumTalk(irc.IRCClient):
     # callbacks for irc events
     def connectionMade(self):
         self.store = self.factory.store
+        self.serverEncoding = self.factory.serverEncoding
         irc.IRCClient.connectionMade(self)
 
     def connectionLost(self, reason):
@@ -167,15 +168,22 @@ class VellumTalk(irc.IRCClient):
     def joined(self, channel):
         """
         When the bot joins a channel, find or make a session and start
-        tracking who's in the session.
+        tracking who's in the session.  Search first in self.sessions (a set
+        of the channels we are already in, just in case), then in self.store
+        (the channels we have ever seen), and then create a new one.
         """
-        # find or make a session
+        # find or make a session.  
         ss = self.findSessions(channel)[0]
         if ss.isDefaultSession: # i.e., not found
-            ss = d20session.D20Session()
-            ss.name = channel.decode(ss.encoding)
-            self.store.add(ss)
-            Store.of(ss).commit()
+            channel = channel.decode(self.serverEncoding)
+            ss = self.store.find(d20session.D20Session,
+                    d20session.D20Session.name == channel).one()
+
+            if ss is None:
+                ss = d20session.D20Session()
+                ss.name = channel.decode(ss.encoding)
+                self.store.add(ss)
+                Store.of(ss).commit()
 
             self.sessions.append(ss)
 
@@ -334,10 +342,13 @@ class VellumTalkFactory(protocol.ClientFactory):
     def __init__(self, channel):
         self.channel = channel
         self.store = None
+        self.serverEncoding = None
         # no protocol.ClientFactory.__init__ to call
 
     def startFactory(self):
-        assert self.store is not None, "Must set %s.store before starting!" % (
+        assert self.serverEncoding is not None, "Must set %s.store before starting!" % (
+                self.__class__.__name__,)
+        assert self.store is not None, "Must set %s.serverEncoding before starting!" % (
                 self.__class__.__name__,)
 
     def clientConnectionLost(self, connector, reason):

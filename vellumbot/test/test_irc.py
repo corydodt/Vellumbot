@@ -84,6 +84,7 @@ class IRCTestCase(util.BotTestCase):
         vt = irc.VellumTalk()
         fac = util.FakeFactory()
         fac.store = userDatabase('sqlite:')
+        fac.serverEncoding = 'utf-8'
         vt.factory = fac
 
         vt.makeConnection(transport)
