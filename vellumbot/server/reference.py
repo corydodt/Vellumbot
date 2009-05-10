@@ -6,7 +6,8 @@ from __future__ import with_statement
 from contextlib import contextmanager
 
 
-from goonmill import search, query
+from playtools import search, query
+from . import _formattingkludge
 import hypy
 
 @contextmanager
@@ -46,7 +47,7 @@ def find(domain, terms, max=5):
                 _ignored_domain, id = look[u'@uri'].split(u'/')
                 thing = lookup(int(id), domain)
                 if thing:
-                    return [thing.oneLineDescription()]
+                    return [_formattingkludge.IOneLine(thing).format()]
             ret.append('"%s": %s' % (look[u'altname'], look.teaser(terms,
                 format='rst')))
         return ret
