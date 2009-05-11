@@ -6,9 +6,11 @@ from __future__ import with_statement
 from contextlib import contextmanager
 
 
-from playtools import search, query
+from playtools import search, fact
 from . import _formattingkludge
 import hypy
+
+SRD = fact.systems['D20 SRD']
 
 @contextmanager
 def openIndex(filename):
@@ -18,19 +20,6 @@ def openIndex(filename):
         yield estdb
     finally:
         estdb.close()
-
-DOMAINS = {
-        u'monster': query.Monster,
-        u'spell': query.Spell,
-        }
-
-def lookup(id, domain):
-    """
-    Get the database-backed Thing which corresponds to the domain and altname,
-    mapping through DOMAINS to get the Thing's class as understood by
-    playtools.query
-    """
-    return query.lookup(id, DOMAINS[domain])
 
 
 def find(domain, terms, max=5):
@@ -45,7 +34,7 @@ def find(domain, terms, max=5):
         for look in looked:
             if look[u'altname'] == normTerms:
                 _ignored_domain, id = look[u'@uri'].split(u'/')
-                thing = lookup(int(id), domain)
+                thing = SRD.facts[domain].lookup(int(id))
                 if thing:
                     return [_formattingkludge.IOneLine(thing).format()]
             ret.append('"%s": %s' % (look[u'altname'], look.teaser(terms,

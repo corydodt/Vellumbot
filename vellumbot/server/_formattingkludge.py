@@ -8,11 +8,15 @@ from zope.interface.adapter import AdapterRegistry
 from zope.interface.interface import adapter_hooks
 
 from playtools.interfaces import IRuleFact
-from playtools import query
+from playtools import fact
+from playtools.plugins import d20srd35
 
 from goonmill import history
 
 from . import interface
+
+
+SRD = fact.systems['D20 SRD']
 
 
 class IOneLine(Interface):
@@ -36,7 +40,7 @@ def oneLineForSpell(spell):
             'range':spell.range,
             'duration':spell.duration,
             'short':spell.short_description,
-            'url':query.srdReferenceURL(spell),
+            'url':d20srd35.srdReferenceURL(spell),
             }
     
     if spell.subschool:
@@ -64,8 +68,8 @@ def oneLineForSpell(spell):
     return tmpl.safe_substitute(dct)
 
 
-_ONELINE_MAPPING = {query.Monster: history.oneLineDescription,
-        query.Spell: oneLineForSpell
+_ONELINE_MAPPING = {SRD.facts['monster'].klass: history.oneLineDescription,
+        SRD.facts['spell'].klass: oneLineForSpell
         }
 
 
