@@ -15,7 +15,7 @@ SRD = fact.systems['D20 SRD']
 @contextmanager
 def openIndex(filename):
     estdb = hypy.HDatabase()
-    estdb.open(search.INDEX_DIRECTORY, 'r')
+    estdb.open(SRD.searchIndexPath, 'r')
     try:
         yield estdb
     finally:
@@ -27,7 +27,7 @@ def find(domain, terms, max=5):
     Return either a list of teasers for the hits (up to max) or, if there is
     an exact match, the one-line description for that one
     """
-    with openIndex(search.INDEX_DIRECTORY) as estdb:
+    with openIndex(SRD.searchIndexPath) as estdb:
         looked = search.find(estdb, domain, terms, max)
         ret = []
         normTerms = ' '.join(terms).lower()
@@ -44,7 +44,7 @@ def find(domain, terms, max=5):
 if __name__ == '__main__': 
     import sys
     args = sys.argv[:]
-    args[1:1] = ['--index-dir', search.INDEX_DIRECTORY]
+    args[1:1] = ['--index-dir', SRD.searchIndexPath]
     sys.exit(
             search.run(args)
             )
