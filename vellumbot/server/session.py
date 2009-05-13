@@ -14,6 +14,16 @@ from ..user import User
 from .interface import IMessageRecipient, ISessionResponse
 
 
+class MissingActor(Exception):
+    """
+    We tried to explicitly reference a person's record by name without
+    creating them first, and that person did not exist.
+    """
+    def __init__(self, message, name):
+        self.message = message
+        self.name = name
+
+
 class UnknownHailError(Exception):
     """
     The bot saw something that looked like a command, but could not figure out
@@ -158,7 +168,10 @@ class Session(object):
             characters.append(actor)
         else:
             # FIXME - should be able to do this with one query
-            characters = map(self._nameToUser, characters)
+            try:
+                characters = map(self._nameToUser, characters)
+            except MissingActor, e:
+                return u'No such user known: %s' % (e.name,)
         ret = []
         m = string.Template(u'Aliases for $char:   $formatted')
         for c in characters:
@@ -170,7 +183,10 @@ class Session(object):
         """Remove an alias from a character: unalias [character] <alias>"""
         if len(removes) > 1:
             key = removes[1]
-            character = self._nameToUser(removes[0])
+            try:
+                character = self._nameToUser(removes[0])
+            except MissingActor, e:
+                return u'No such user known: %s' % (e.name,)
         else:
             key = removes[0]
             character = actor
@@ -312,7 +328,8 @@ class Session(object):
                 ret.name = name
                 store.add(ret)
                 store.commit()
-        assert ret is not None, "Actor %r did not exist and was not created." % (name,)
+        if ret is None:
+            raise MissingActor("Actor did not exist and was not created", name)
         return ret
 
     def privateCommand(self, request, *observers):

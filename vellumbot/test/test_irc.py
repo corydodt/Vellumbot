@@ -56,6 +56,20 @@ class IRCTestCase(util.BotTestCase):
         geeEm('VellumTalk', '.aliases', 
               ('GeeEm', r'Aliases for GeeEm:   argh=20, foobar=30, kill=20'))
 
+    def test_aliasesForMissing(self):
+        """
+        The bot does not barf when we try to access the aliases of an unknown
+        person.
+        """
+        geeEm = lambda *a, **kw: self.anyone('GeeEm', *a, **kw)
+        ugm = self.addUser(u"GeeEm")
+
+        geeEm('VellumTalk', ".aliases unknownPersonX", 
+                ('GeeEm', 'No such user known: unknownPersonX'))
+
+        geeEm('VellumTalk', ".unalias unknownPersonX spot", 
+                ('GeeEm', 'No such user known: unknownPersonX'))
+
     def test_closingQuotation(self):
         """
         quotes seem to cause issues in this odd corner case
