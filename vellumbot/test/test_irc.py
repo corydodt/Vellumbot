@@ -56,6 +56,18 @@ class IRCTestCase(util.BotTestCase):
         geeEm('VellumTalk', '.aliases', 
               ('GeeEm', r'Aliases for GeeEm:   argh=20, foobar=30, kill=20'))
 
+    def test_closingQuotation(self):
+        """
+        quotes seem to cause issues in this odd corner case
+        """
+        vellumbot.server.session.TESTING = True
+        vellumbot.server.irc.TESTING = True
+
+        geeEm = lambda *a, **kw: self.anyone('GeeEm', *a, **kw)
+        ugm = self.addUser(u"GeeEm")
+        # this seems to be the minimum necessary to reproduce the bug
+        geeEm('#testing', "n: o p. q'r")
+
     def test_gibberishCommand(self):
         """
         Speaking gibberish commands to the bot does not flail
