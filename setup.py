@@ -6,7 +6,7 @@ except ImportError:
 
 from setuptools import setup, find_packages
 setup(name='Vellumbot',
-      version='0.5',
+      version='0.6',
       author='Cory Dodt',
       description='Vellumbot D&D robot',
       url='http://goonmill.org/vellumbot/',
@@ -16,6 +16,7 @@ setup(name='Vellumbot',
 
       install_requires=[
           'pysqlite>=2',
+          'playtools>=0.3.0',
           'storm>=0.13',
           ],
 
