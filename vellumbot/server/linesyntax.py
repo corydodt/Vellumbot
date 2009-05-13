@@ -132,7 +132,11 @@ class Sentence(object):
         if type(s) is unicode:    # FIXME - working around python bug 1548891 
             s = s.encode('ascii') # in shlex.split()                          
         # blah - shlex.split(None) blocks waiting for input, so protect it
-        self._commandArgs = shlex.split(s or '')
+        try:
+            self._commandArgs = shlex.split(s or '')
+        except ValueError, e:
+            if e.message == "No closing quotation":
+                self._commandArgs = [s]
 
     commandArgs = property(get_commandArgs, set_commandArgs)
 
