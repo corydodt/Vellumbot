@@ -59,7 +59,6 @@ if [ -n "$force" ]; then
     echo ':: force is in effect: removing database files!'
     set -x
     rm -f vellumbot/user.db*
-    rm -rf vellumbot/srd35-index/_idx
     set +x
 fi
 
@@ -77,22 +76,6 @@ else
     echo :: If you have already run bootstrap.sh once, this is not an error.
     echo ::
 fi
-
-estraierindex=vellumbot/srd35-index/_idx
-if [ ! -d "$estraierindex" ]; then
-    idir=vellumbot/srd35-index
-    echo ::
-    echo :: $idir
-    mkdir -p $idir
-    python -m goonmill.search --build-index --index-dir=$idir
-    echo
-else
-    echo "** ${estraierindex} already exists, not willing to overwrite it!"
-    echo ::
-    echo :: If you have already run bootstrap.sh once, this is not an error.
-    echo ::
-fi
-
 
 echo ::
 echo :: Done.
