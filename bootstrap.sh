@@ -29,7 +29,7 @@ function testPython()
 #  redirect to stdout.
 {
     software="$1"
-    line=$(python -c "$2" 2>&1 | tail -1)
+    line=$(python -Wignore -c "$2" 2>&1 | tail -1)
 
     if [ -n "$line" ]; then
         echo "** Install $software ($line)"
