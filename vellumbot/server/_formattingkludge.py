@@ -4,14 +4,13 @@ Quick hack to make tests pass while I think about a real formatting interface
 import string
 
 from zope.interface import Interface, implements, providedBy
-from zope.interface.adapter import AdapterRegistry
 from zope.interface.interface import adapter_hooks
 
-from playtools.interfaces import IRuleFact
-from playtools import fact
+from playtools.interfaces import IRuleCollection
+from playtools import fact, globalRegistry
 from playtools.plugins import d20srd35
 
-from goonmill import history
+from goonmill import statblock
 
 from . import interface
 
@@ -68,13 +67,13 @@ def oneLineForSpell(spell):
     return tmpl.safe_substitute(dct)
 
 
-_ONELINE_MAPPING = {SRD.facts['monster'].klass: history.oneLineDescription,
+_ONELINE_MAPPING = {SRD.facts['monster'].klass: statblock.oneLineDescription,
         SRD.facts['spell'].klass: oneLineForSpell
         }
 
 
 class OneLineDescriptor(object):
-    __used_for__ = IRuleFact
+    __used_for__ = IRuleCollection
     implements(IOneLine)
 
     def __init__(self, context):
@@ -86,15 +85,4 @@ class OneLineDescriptor(object):
         """
         return _ONELINE_MAPPING[self.context.__class__](self.context)
 
-registry = AdapterRegistry()
-registry.register([IRuleFact], IOneLine, '', OneLineDescriptor)
-
-def hook(provided, object):
-    """
-    For IFoo(bar), call an already-registered adapter to adapt bar to IFoo
-    """
-    adapter = registry.lookup1(providedBy(object), provided,
-            '')
-    return adapter(object)
-
-adapter_hooks.append(hook)
+globalRegistry.register([IRuleCollection], IOneLine, '', OneLineDescriptor)
