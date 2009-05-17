@@ -67,13 +67,68 @@ def oneLineForSpell(spell):
     return tmpl.safe_substitute(dct)
 
 
-_ONELINE_MAPPING = {SRD.facts['monster'].klass: statblock.oneLineDescription,
+def oneLineForMonster(monster):
+    """
+    Produce a single-line description suitable for pure-text environments
+    """
+    sb = statblock.Statblock.fromMonster(monster)
+    get = sb.get
+    tmpl = string.Template(
+            '<<$name>> $alignment $size $creatureType || Init $initiative || $senses Listen $listen Spot $spot || AC $ac || $hitDice HD || Fort $fort Ref $ref Will $will || $speed $attacks$attackOptions$spellLikes|| $abilities || SQ $SQ || $url')
+    dct = {'name': get('name'),
+           'alignment': get('alignment'),
+           'size': get('size'),
+           'creatureType': get('type'),
+           'initiative': get('initiative'),
+           'senses': get('senses'),
+           'listen': get('listen'),
+           'spot': get('spot'),
+           'ac': get('armor_class'),
+           'hitDice': get('hitDice'),
+           'fort': get('fort'),
+           'ref': get('ref'),
+           'will': get('will'),
+           'speed': get('speed'),
+           'attacks': '',
+           'attackOptions': '',
+           'spellLikes': '',
+           'abilities': get('abilities'),
+           'SQ': get('special_qualities'),
+           'url': d20srd35.srdReferenceURL(monster),
+           }
+
+    attacks = []
+    attackGroups = sb.get('attackGroups')
+    melees = attackGroups['melee']
+    rangeds = attackGroups['ranged']
+    for melee in melees:
+        attacks.append("MELEE %s" % (melee,))
+    for ranged in rangeds:
+        attacks.append("RANGED %s" % (ranged,))
+    if attacks:
+        dct['attacks'] = '|| %s ' % (' '.join(attacks),)
+
+    attackOptions = get('special_attacks')
+    if attackOptions:
+        dct['attackOptions'] = '|| Atk Options %s ' % (attackOptions,)
+
+    spellLikes = get('spellLikeAbilities')
+    if spellLikes:
+        dct['spellLikes'] = '|| Spell-Like: %s ' % (spellLikes,)
+
+    # resistance, immunity, spell resistance, and vulnerability are all
+    # found in the SQ field already, so DRY
+
+    return tmpl.safe_substitute(dct)
+
+
+_ONELINE_MAPPING = {SRD.facts['monster'].klass: oneLineForMonster,
         SRD.facts['spell'].klass: oneLineForSpell
         }
 
 
 class OneLineDescriptor(object):
-    __used_for__ = IRuleCollection
+    __used_for__ = d20srd35.IStormFact
     implements(IOneLine)
 
     def __init__(self, context):
@@ -85,4 +140,4 @@ class OneLineDescriptor(object):
         """
         return _ONELINE_MAPPING[self.context.__class__](self.context)
 
-globalRegistry.register([IRuleCollection], IOneLine, '', OneLineDescriptor)
+globalRegistry.register([d20srd35.IStormFact], IOneLine, '', OneLineDescriptor)
