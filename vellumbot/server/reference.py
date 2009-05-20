@@ -6,8 +6,7 @@ from __future__ import with_statement
 from contextlib import contextmanager
 
 
-from playtools import search, fact
-from . import _formattingkludge
+from playtools import search, fact, publish
 import hypy
 
 SRD = fact.systems['D20 SRD']
@@ -36,7 +35,7 @@ def find(domain, terms, max=5):
                 _ignored_domain, id = look[u'@uri'].split(u'/')
                 thing = SRD.facts[domain].lookup(int(id))
                 if thing:
-                    return [_formattingkludge.IOneLine(thing).format()]
+                    return [publish.publish(thing, 'richIRC')]
             ret.append('"%s": %s' % (look[u'altname'], look.teaser(terms,
                 format='rst')))
         return ret
