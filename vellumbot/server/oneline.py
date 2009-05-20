@@ -58,7 +58,7 @@ class OneLineSpellPublisher(object):
 class RichIRCSpellPublisher(OneLineSpellPublisher):
     implements(IPublisher)
     name = 'richIRC'
-    tmpl = string.Template(r'\037$name\017 $school $subschool|| Level: $level || Casting Time: $time || $comps || Range: $range || $areaAndTarget || Duration: $duration $save|| \002$short\017 || $url')
+    tmpl = string.Template('\037$name\017 $school $subschool|| Level: $level || Casting Time: $time || $comps || Range: $range || $areaAndTarget || Duration: $duration $save|| \002$short\017 || $url')
 
 publish.addPublisher(SRD.facts['spell'], OneLineSpellPublisher)
 publish.addPublisher(SRD.facts['spell'], RichIRCSpellPublisher)
@@ -125,7 +125,7 @@ class RichIRCMonsterPublisher(OneLineMonsterPublisher):
     implements(IPublisher)
     name = 'richIRC'
     tmpl = string.Template(
-            r'\037$name\017 $alignment $size $creatureType || Init \002$initiative\017 || $senses Listen $listen Spot $spot || AC \002$ac\017 || $hitDice HD || Fort $fort Ref $ref Will $will || $speed \002$attacks\017$attackOptions$spellLikes|| $abilities || SQ $SQ || $url')
+            '\037$name\017 $alignment $size $creatureType || Init \002$initiative\017 || $senses Listen $listen Spot $spot || AC \002$ac\017 || $hitDice HD || Fort $fort Ref $ref Will $will || $speed \002$attacks\017$attackOptions$spellLikes|| $abilities || SQ $SQ || $url')
 
 publish.addPublisher(SRD.facts['monster'], OneLineMonsterPublisher)
 publish.addPublisher(SRD.facts['monster'], RichIRCMonsterPublisher)
