@@ -1,5 +1,5 @@
 """
-Quickly moving tests from goonmill to vellumbot to keep them together..
+Test the oneLine formatters for spell, monster, etc.
 """
 from twisted.trial import unittest
 
@@ -10,7 +10,7 @@ from vellumbot.server import oneline
 SRD = fact.systems['D20 SRD']
 MONSTERS = SRD.facts['monster']
 
-class KludgeTest(unittest.TestCase):
+class OneLineTest(unittest.TestCase):
     def test_oneLine(self):
         """
         Make sure one-line descriptions are correctly formatted
