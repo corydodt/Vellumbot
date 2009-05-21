@@ -57,7 +57,8 @@ class TestD20Session(util.BotTestCase):
         try:
             player('#testing', '.lookup spell cure serious wounds mass', (
                 '#testing', 
-                r'Player: SPELL <<Cure .*, Mass>> Conjuration \(Healing\) || Level: Cleric 7, Druid 8 || This spell functions like .* +35\)\.'),
+                'Player: SPELL EXACT: \037Cure Serious Wounds, Mass\017 .*',
+                )
             )
         
             player('#testing', '.lookup spell wenis', (
