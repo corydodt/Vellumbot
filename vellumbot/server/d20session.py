@@ -54,7 +54,7 @@ class D20Session(session.Session):
                     '%s: No %s contains "%s".  Try searching with a wildcard e.g. .lookup %s %s*' % (
                             req.user, UPPER, ts, domain, ts))
         else:
-            if looked[0].startswith('<<'):
+            if looked[0].startswith('EXACT: '):
                 assert len(looked) == 1, "Exact match returned with %s hits?" % ( len(looked), )
                 return '%s: %s %s' % (req.user, UPPER, looked[0])
             else:

@@ -56,15 +56,18 @@ class TestD20Session(util.BotTestCase):
         vellumbot.server.irc.MAX_LINE = 600
         try:
             player('#testing', '.lookup spell cure serious wounds mass', (
-    '#testing', r'Player: SPELL <<Cure .*, Mass>> Conjuration \(Healing\) || Level: Cleric 7, Druid 8 || This spell functions like .* +35\)\.'),
-                    )
+                '#testing', 
+                r'Player: SPELL <<Cure .*, Mass>> Conjuration \(Healing\) || Level: Cleric 7, Druid 8 || This spell functions like .* +35\)\.'),
+            )
         
             player('#testing', '.lookup spell wenis', (
-    '#testing', r'Player: No SPELL contains "wenis"\.  Try searching with a wildcard e\.g\. \.lookup spell wenis\*'),
-                    )
+                '#testing', 
+                r'Player: No SPELL contains "wenis"\.  Try searching with a wildcard e\.g\. \.lookup spell wenis\*'),
+            )
             player('#testing', '.lookup spell wenis*', (
-    '#testing', r'Player: No SPELL contains "wenis\*"\.'),
-                    )
+                '#testing', 
+                r'Player: No SPELL contains "wenis\*"\.'),
+            )
 
             lines2 = '''"heal mass": Heal, Mass Conjuration \(Healing\) Le \.\.\.
 "heal": Heal Conjuration \(Healing\) Level: C \.\.\.
@@ -78,8 +81,10 @@ class TestD20Session(util.BotTestCase):
             player('#testing', '.lookup spell heal*', *expectations3)
 
             player('#testing', '.lookup monster mohrg', (
-    '#testing', r'Player: MONSTER <<Mohrg>> Chaotic Evil .*mohrg.htm')
-                    )
+                '#testing', 
+                r'Player: MONSTER EXACT: \037Mohrg\017 Chaotic Evil .*mohrg.htm'
+                )
+            )
         finally:
             vellumbot.server.irc.MAX_LINE = 420 
 

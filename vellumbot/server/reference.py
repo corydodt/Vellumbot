@@ -37,7 +37,7 @@ def find(domain, terms, max=5):
                 _ignored_domain, id = look[u'@uri'].split(u'/')
                 thing = SRD.facts[domain].lookup(int(id))
                 if thing:
-                    return [publish.publish(thing, 'richIRC')]
+                    return [u"EXACT: %s" % (publish.publish(thing, 'richIRC'),)]
             ret.append('"%s": %s' % (look[u'altname'], look.teaser(terms,
                 format='rst')))
         return ret
