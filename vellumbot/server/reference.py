@@ -42,11 +42,3 @@ def find(domain, terms, max=5):
                 format='rst')))
         return ret
  
-if __name__ == '__main__': 
-    import sys
-    args = sys.argv[:]
-    args[1:1] = ['--index-dir', SRD.searchIndexPath]
-    sys.exit(
-            search.run(args)
-            )
-
