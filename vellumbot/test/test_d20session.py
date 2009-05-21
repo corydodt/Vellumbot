@@ -96,7 +96,7 @@ class TestD20Session(util.BotTestCase):
         vellumbot.server.session.TESTING = True
         vellumbot.server.irc.TESTING = True
         self.addUser(u'Player')
-        self.anyone('Player', '#testing', '.lookup feat cleave', 
+        self.anyone('Player', '#testing', '.lookup flurfl cleave', 
                 ('#testing', 'I don\'t know how to look those things up.'))
 
     def test_initiative(self):
