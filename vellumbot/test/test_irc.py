@@ -2,7 +2,7 @@ import operator
 
 from twisted.test.proto_helpers import StringTransport
 
-from vellumbot.server import d20session, irc
+from vellumbot.server import irc
 from vellumbot.user import User, userDatabase
 import vellumbot.server.session
 

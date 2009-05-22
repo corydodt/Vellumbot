@@ -1,5 +1,6 @@
 try:
     import setuptools
+    setuptools
 except ImportError:
     from ez_setup import use_setuptools
     use_setuptools()

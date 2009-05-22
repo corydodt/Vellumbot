@@ -1,7 +1,6 @@
 """
 D20Session tests
 """
-import operator
 import re
 
 from twisted.trial import unittest

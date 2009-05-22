@@ -1,9 +1,6 @@
 """Session subclass specific to D20 (inits etc.)"""
 
-from collections import deque
 import bisect
-
-from storm import locals
 
 from vellumbot.server import alias, session, reference
 

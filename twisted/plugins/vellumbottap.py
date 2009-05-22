@@ -38,6 +38,7 @@ class VellumbotServerMaker(object):
         if options['dev']:
             try:
                 import wingdbstub
+                wingdbstub
             except ImportError:
                 pass
         from vellumbot.server.irc import VellumTalkFactory

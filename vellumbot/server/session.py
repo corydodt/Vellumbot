@@ -305,6 +305,7 @@ class Session(object):
             # TODO - we probably never reach here with current code.
             # this is if a bot wants to say something in more than
             # one public channel, which I don't think is possible.
+            from storm.locals import Store
             ss = Store.of(self).find(Session, Session.name == name).one()
         else:
             ss = User()
@@ -403,8 +404,7 @@ class Session(object):
     def reportNicks(self, message):
         assert type(message) is unicode
         return None # FIXME - very spammy when on
-        return Response(u"Nicks in this session: %s" % (nicks,),
-                        request)
+        return Response(message)
 
     def rename(self, old, new):
         assert type(old) is type(new) is unicode

@@ -128,7 +128,6 @@ class Sentence(object):
         return [s.decode('ascii') for s in self._commandArgs]
 
     def set_commandArgs(self, s):
-        from vellumbot.server import session
         if type(s) is unicode:    # FIXME - working around python bug 1548891 
             s = s.encode('ascii') # in shlex.split()                          
         # blah - shlex.split(None) blocks waiting for input, so protect it

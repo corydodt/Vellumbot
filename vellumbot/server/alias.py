@@ -3,13 +3,8 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-import atexit
-import errno
-
-from twisted.python import log
 
 from playtools import dice, diceparser
-from vellumbot.server.fs import fs
 
 _alias_hooks = {}
 

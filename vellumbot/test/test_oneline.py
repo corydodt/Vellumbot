@@ -5,7 +5,9 @@ from twisted.trial import unittest
 
 from playtools import fact, publish
 
+# FIXME!! need to import this or publish.publish doesn't work
 from vellumbot.server import oneline
+oneline
 
 SRD = fact.systems['D20 SRD']
 MONSTERS = SRD.facts['monster']

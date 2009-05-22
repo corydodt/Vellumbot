@@ -8,7 +8,7 @@ from twisted.python import log
 
 from storm.locals import Store
 
-from vellumbot.server import linesyntax, d20session, session
+from vellumbot.server import linesyntax, d20session
 
 
 MAX_LINE = 420
