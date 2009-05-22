@@ -8,6 +8,7 @@ from zope.interface import implements
 from playtools import fact, publish
 from playtools.interfaces import IPublisher
 from playtools.plugins import d20srd35
+from playtools.search import textFromHtml
 
 from goonmill import statblock
 
@@ -18,7 +19,7 @@ SRD = fact.systems['D20 SRD']
 class OneLineSpellPublisher(object):
     implements(IPublisher)
     name = 'oneLine'
-    tmpl = string.Template('<<$name>> $school $subschool|| Level: $level || Casting Time: $time || $comps || Range: $range || $areaAndTarget || Duration: $duration $save|| $short || $url')
+    tmpl = string.Template('<<$name>>   $school $subschool|| Level: $level || Casting Time: $time || $comps || Range: $range || $areaAndTarget || Duration: $duration $save|| $short || $url')
     def format(self, spell):
         dct = {'name':spell.name,
                 'school': spell.school,
@@ -58,7 +59,7 @@ class OneLineSpellPublisher(object):
 class RichIRCSpellPublisher(OneLineSpellPublisher):
     implements(IPublisher)
     name = 'richIRC'
-    tmpl = string.Template('\037$name\017 $school $subschool|| Level: $level || Casting Time: $time || $comps || Range: $range || $areaAndTarget || Duration: $duration $save|| \002$short\017 || $url')
+    tmpl = string.Template('\037$name\017   $school $subschool|| Level: $level || Casting Time: $time || $comps || Range: $range || $areaAndTarget || Duration: $duration $save|| \002$short\017 || $url')
 
 publish.addPublisher(SRD.facts['spell'], OneLineSpellPublisher)
 publish.addPublisher(SRD.facts['spell'], RichIRCSpellPublisher)
@@ -68,7 +69,7 @@ class OneLineMonsterPublisher(object):
     implements(IPublisher)
     name = 'oneLine'
     tmpl = string.Template(
-            '<<$name>> $alignment $size $creatureType || Init $initiative || $senses Listen $listen Spot $spot || AC $ac || $hitDice HD || Fort $fort Ref $ref Will $will || $speed $attacks$attackOptions$spellLikes|| $abilities || SQ $SQ || $url')
+            '<<$name>>   $alignment $size $creatureType || Init $initiative || $senses Listen $listen Spot $spot || AC $ac || $hitDice HD || Fort $fort Ref $ref Will $will || $speed $attacks$attackOptions$spellLikes|| $abilities || SQ $SQ || $url')
     def format(self, monster):
         """
         Produce a single-line description suitable for pure-text environments
@@ -125,7 +126,67 @@ class RichIRCMonsterPublisher(OneLineMonsterPublisher):
     implements(IPublisher)
     name = 'richIRC'
     tmpl = string.Template(
-            '\037$name\017 $alignment $size $creatureType || Init \002$initiative\017 || $senses Listen $listen Spot $spot || AC \002$ac\017 || $hitDice HD || Fort $fort Ref $ref Will $will || $speed \002$attacks\017$attackOptions$spellLikes|| $abilities || SQ $SQ || $url')
+            '\037$name\017   $alignment $size $creatureType || Init \002$initiative\017 || $senses Listen $listen Spot $spot || AC \002$ac\017 || $hitDice HD || Fort $fort Ref $ref Will $will || $speed \002$attacks\017$attackOptions$spellLikes|| $abilities || SQ $SQ || $url')
 
 publish.addPublisher(SRD.facts['monster'], OneLineMonsterPublisher)
 publish.addPublisher(SRD.facts['monster'], RichIRCMonsterPublisher)
+
+
+class OneLineSkillPublisher(object):
+    implements(IPublisher)
+    name = 'oneLine'
+    tmpl = string.Template(
+            '<<$name>>   Key Ability: $keyAbil || Action: $action || Try Again? $tryAgain || $url')
+    def format(self, skill):
+        """
+        Produce a single-line description suitable for pure-text environments
+        """
+        keyAbil = unicode(skill.keyAbility.label)
+        action = unicode(skill.skillAction)
+        tryAgain = unicode(skill.tryAgainComment) or u'yes'
+        url = unicode(skill.reference.resUri)
+        dct = {'name': unicode(skill.label),
+                'keyAbil': keyAbil,
+                'action': action,
+                'tryAgain': tryAgain,
+                'url': url,
+                }
+
+        return self.tmpl.safe_substitute(dct)
+
+class RichIRCSkillPublisher(OneLineSkillPublisher):
+    implements(IPublisher)
+    name = 'richIRC'
+    tmpl = string.Template(
+            '\037$name\017   Key Ability: $keyAbil || Action: $action || Try Again? $tryAgain || $url')
+
+publish.addPublisher(SRD.facts['skill'], OneLineSkillPublisher)
+publish.addPublisher(SRD.facts['skill'], RichIRCSkillPublisher)
+
+
+class OneLineFeatPublisher(object):
+    implements(IPublisher)
+    name = 'oneLine'
+    tmpl = string.Template(
+            '<<$name>>   $benefit || $url')
+    def format(self, feat):
+        """
+        Produce a single-line description suitable for pure-text environments
+        """
+        benefit = unicode(feat.benefit)
+        url = unicode(feat.reference.resUri)
+        dct = {'name': unicode(feat.label),
+                'benefit': textFromHtml(benefit),
+                'url': url,
+                }
+
+        return self.tmpl.safe_substitute(dct)
+
+class RichIRCFeatPublisher(OneLineFeatPublisher):
+    implements(IPublisher)
+    name = 'richIRC'
+    tmpl = string.Template(
+            '\037$name\017   $benefit || $url')
+
+publish.addPublisher(SRD.facts['feat'], OneLineFeatPublisher)
+publish.addPublisher(SRD.facts['feat'], RichIRCFeatPublisher)

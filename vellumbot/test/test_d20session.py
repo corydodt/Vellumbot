@@ -57,7 +57,7 @@ class TestD20Session(util.BotTestCase):
         try:
             player('#testing', '.lookup spell cure serious wounds mass', (
                 '#testing', 
-                'Player: SPELL EXACT: \037Cure Serious Wounds, Mass\017 .*',
+                'Player: SPELL EXACT: \037Cure Serious Wounds, Mass\017   .*',
                 )
             )
         
@@ -83,11 +83,38 @@ class TestD20Session(util.BotTestCase):
 
             player('#testing', '.lookup monster mohrg', (
                 '#testing', 
-                r'Player: MONSTER EXACT: \037Mohrg\017 Chaotic Evil .*mohrg.htm'
+                r'Player: MONSTER EXACT: \037Mohrg\017   Chaotic Evil .*mohrg.htm'
                 )
             )
         finally:
             vellumbot.server.irc.MAX_LINE = 420 
+
+    def test_lookupFeat(self):
+        """
+        I know how to look up feats
+        """
+        geeEm = lambda *a, **kw: self.anyone('GeeEm', *a, **kw)
+        self.addUser(u'GeeEm')
+        benefit = "Benefit:  In melee, every time you miss because of concealment, you can reroll .*"
+        vellumbot.server.irc.MAX_LINE = 800
+        geeEm('#testing', '.lookup feat blindfight', (
+            '#testing', 
+            r'GeeEm: FEAT EXACT: \037Blind-Fight\017   ' + benefit,
+            )
+        )
+
+    def test_lookupSkill(self):
+        """
+        I know how to look up skills
+        """
+        geeEm = lambda *a, **kw: self.anyone('GeeEm', *a, **kw)
+        self.addUser(u'GeeEm')
+        vellumbot.server.irc.MAX_LINE = 600
+        geeEm('#testing', '.lookup skill concentration', (
+            '#testing', 
+            r'GeeEm: SKILL EXACT: \037Concentration\017   Key Ability: Con.*', 
+            )
+        )
 
     def test_failedReference(self):
         """
