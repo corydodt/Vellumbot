@@ -1,5 +1,4 @@
-images
 .pyc$
-_trial_temp
+^_trial_temp
 user.db
 (^|/)dropin.cache$
