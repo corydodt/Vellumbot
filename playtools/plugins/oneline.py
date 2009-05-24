@@ -5,18 +5,13 @@ import string
 
 from zope.interface import implements
 
-from playtools import fact, publish
+from playtools import publisherplugin
 from playtools.interfaces import IPublisher
 from playtools.plugins import d20srd35
 from playtools.search import textFromHtml
 
-from goonmill import statblock
 
-
-SRD = fact.systems['D20 SRD']
-
-
-class OneLineSpellPublisher(object):
+class OneLineSpellPublisher(publisherplugin.PublisherPlugin):
     implements(IPublisher)
     name = 'oneLine'
     tmpl = string.Template('<<$name>>   $school $subschool|| Level: $level || Casting Time: $time || $comps || Range: $range || $areaAndTarget || Duration: $duration $save|| $short || $url')
@@ -61,11 +56,11 @@ class RichIRCSpellPublisher(OneLineSpellPublisher):
     name = 'richIRC'
     tmpl = string.Template('\037$name\017   $school $subschool|| Level: $level || Casting Time: $time || $comps || Range: $range || $areaAndTarget || Duration: $duration $save|| \002$short\017 || $url')
 
-publish.addPublisher(SRD.facts['spell'], OneLineSpellPublisher)
-publish.addPublisher(SRD.facts['spell'], RichIRCSpellPublisher)
+oneLineSpellPub = OneLineSpellPublisher('D20 SRD', 'spell')
+richIRCSpellPub = RichIRCSpellPublisher('D20 SRD', 'spell')
 
 
-class OneLineMonsterPublisher(object):
+class OneLineMonsterPublisher(publisherplugin.PublisherPlugin):
     implements(IPublisher)
     name = 'oneLine'
     tmpl = string.Template(
@@ -74,6 +69,8 @@ class OneLineMonsterPublisher(object):
         """
         Produce a single-line description suitable for pure-text environments
         """
+        from goonmill import statblock # FIXME - statblock data should come from playtools
+
         sb = statblock.Statblock.fromMonster(monster)
         get = sb.get
         dct = {'name': get('name'),
@@ -128,11 +125,11 @@ class RichIRCMonsterPublisher(OneLineMonsterPublisher):
     tmpl = string.Template(
             '\037$name\017   $alignment $size $creatureType || Init \002$initiative\017 || $senses Listen $listen Spot $spot || AC \002$ac\017 || $hitDice HD || Fort $fort Ref $ref Will $will || $speed \002$attacks\017$attackOptions$spellLikes|| $abilities || SQ $SQ || $url')
 
-publish.addPublisher(SRD.facts['monster'], OneLineMonsterPublisher)
-publish.addPublisher(SRD.facts['monster'], RichIRCMonsterPublisher)
+oneLineMonsterPub = OneLineMonsterPublisher('D20 SRD', 'monster')
+richIRCMonsterPub = RichIRCMonsterPublisher('D20 SRD', 'monster')
 
 
-class OneLineSkillPublisher(object):
+class OneLineSkillPublisher(publisherplugin.PublisherPlugin):
     implements(IPublisher)
     name = 'oneLine'
     tmpl = string.Template(
@@ -160,11 +157,11 @@ class RichIRCSkillPublisher(OneLineSkillPublisher):
     tmpl = string.Template(
             '\037$name\017   Key Ability: $keyAbil || Action: $action || Try Again? $tryAgain || $url')
 
-publish.addPublisher(SRD.facts['skill'], OneLineSkillPublisher)
-publish.addPublisher(SRD.facts['skill'], RichIRCSkillPublisher)
+oneLineSkillPub = OneLineSkillPublisher('D20 SRD', 'skill')
+richIRCSkillPub = RichIRCSkillPublisher('D20 SRD', 'skill')
 
 
-class OneLineFeatPublisher(object):
+class OneLineFeatPublisher(publisherplugin.PublisherPlugin):
     implements(IPublisher)
     name = 'oneLine'
     tmpl = string.Template(
@@ -188,5 +185,5 @@ class RichIRCFeatPublisher(OneLineFeatPublisher):
     tmpl = string.Template(
             '\037$name\017   $benefit || $url')
 
-publish.addPublisher(SRD.facts['feat'], OneLineFeatPublisher)
-publish.addPublisher(SRD.facts['feat'], RichIRCFeatPublisher)
+oneLineFeatPub = OneLineFeatPublisher('D20 SRD', 'feat')
+richIRCFeatPub = RichIRCFeatPublisher('D20 SRD', 'feat')

@@ -9,10 +9,6 @@ from playtools import search, fact, publish
 
 import hypy
 
-# FIXME!! have to import this otherwise publishers are not registered
-from . import oneline
-oneline
-
 SRD = fact.systems['D20 SRD']
 
 @contextmanager
