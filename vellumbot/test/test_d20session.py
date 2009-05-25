@@ -56,7 +56,7 @@ class TestD20Session(util.BotTestCase):
         try:
             player('#testing', '.lookup spell cure serious wounds mass', (
                 '#testing', 
-                'Player: SPELL EXACT: \037Cure Serious Wounds, Mass\017   .*',
+                'Player: SPELL EXACT: \037Cure Serious Wounds, Mass\037   .*',
                 )
             )
         
@@ -82,7 +82,7 @@ class TestD20Session(util.BotTestCase):
 
             player('#testing', '.lookup monster mohrg', (
                 '#testing', 
-                r'Player: MONSTER EXACT: \037Mohrg\017   Chaotic Evil .*mohrg.htm'
+                r'Player: MONSTER EXACT: \037Mohrg\037   Chaotic Evil .*mohrg.htm'
                 )
             )
         finally:
@@ -98,7 +98,7 @@ class TestD20Session(util.BotTestCase):
         vellumbot.server.irc.MAX_LINE = 800
         geeEm('#testing', '.lookup feat blindfight', (
             '#testing', 
-            r'GeeEm: FEAT EXACT: \037Blind-Fight\017   ' + benefit,
+            r'GeeEm: FEAT EXACT: \037Blind-Fight\037   ' + benefit,
             )
         )
 
@@ -111,7 +111,7 @@ class TestD20Session(util.BotTestCase):
         vellumbot.server.irc.MAX_LINE = 600
         geeEm('#testing', '.lookup skill concentration', (
             '#testing', 
-            r'GeeEm: SKILL EXACT: \037Concentration\017   Key Ability: Con.*', 
+            r'GeeEm: SKILL EXACT: \037Concentration\037   Key Ability: Con.*', 
             )
         )
 

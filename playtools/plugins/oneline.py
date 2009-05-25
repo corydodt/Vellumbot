@@ -54,7 +54,7 @@ class OneLineSpellPublisher(publisherplugin.PublisherPlugin):
 class RichIRCSpellPublisher(OneLineSpellPublisher):
     implements(IPublisher)
     name = 'richIRC'
-    tmpl = string.Template('\037$name\017   $school $subschool|| Level: $level || Casting Time: $time || $comps || Range: $range || $areaAndTarget || Duration: $duration $save|| \002$short\017 || $url')
+    tmpl = string.Template('\037$name\037   $school $subschool|| Level: $level || Casting Time: $time || $comps || Range: $range || $areaAndTarget || Duration: $duration $save|| \002$short\002 || $url')
 
 oneLineSpellPub = OneLineSpellPublisher('D20 SRD', 'spell')
 richIRCSpellPub = RichIRCSpellPublisher('D20 SRD', 'spell')
@@ -123,7 +123,7 @@ class RichIRCMonsterPublisher(OneLineMonsterPublisher):
     implements(IPublisher)
     name = 'richIRC'
     tmpl = string.Template(
-            '\037$name\017   $alignment $size $creatureType || Init \002$initiative\017 || $senses Listen $listen Spot $spot || AC \002$ac\017 || $hitDice HD || Fort $fort Ref $ref Will $will || $speed \002$attacks\017$attackOptions$spellLikes|| $abilities || SQ $SQ || $url')
+            '\037$name\037   $alignment $size $creatureType || Init \002$initiative\002 || $senses Listen $listen Spot $spot || AC \002$ac\002 || $hitDice HD || Fort $fort Ref $ref Will $will || $speed \002$attacks\002$attackOptions$spellLikes|| $abilities || SQ $SQ || $url')
 
 oneLineMonsterPub = OneLineMonsterPublisher('D20 SRD', 'monster')
 richIRCMonsterPub = RichIRCMonsterPublisher('D20 SRD', 'monster')
@@ -155,7 +155,7 @@ class RichIRCSkillPublisher(OneLineSkillPublisher):
     implements(IPublisher)
     name = 'richIRC'
     tmpl = string.Template(
-            '\037$name\017   Key Ability: $keyAbil || Action: $action || Try Again? $tryAgain || $url')
+            '\037$name\037   Key Ability: $keyAbil || Action: $action || Try Again? $tryAgain || $url')
 
 oneLineSkillPub = OneLineSkillPublisher('D20 SRD', 'skill')
 richIRCSkillPub = RichIRCSkillPublisher('D20 SRD', 'skill')
@@ -183,7 +183,7 @@ class RichIRCFeatPublisher(OneLineFeatPublisher):
     implements(IPublisher)
     name = 'richIRC'
     tmpl = string.Template(
-            '\037$name\017   $benefit || $url')
+            '\037$name\037   $benefit || $url')
 
 oneLineFeatPub = OneLineFeatPublisher('D20 SRD', 'feat')
 richIRCFeatPub = RichIRCFeatPublisher('D20 SRD', 'feat')
