@@ -10,6 +10,8 @@ from storm.locals import Store
 
 from vellumbot.server import linesyntax, d20session
 
+from simpleparse.error import ParserSyntaxError
+
 
 MAX_LINE = 420
 
@@ -295,7 +297,7 @@ class VellumTalk(irc.IRCClient):
         msg = msg.decode(ss.encoding)
         try:
             sentence = linesyntax.parseSentence(msg)
-        except RuntimeError:
+        except (RuntimeError, ParserSyntaxError):
             return
 
         user = user.decode(ss.encoding)

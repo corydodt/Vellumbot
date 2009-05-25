@@ -82,7 +82,7 @@ class IRCTestCase(util.BotTestCase):
         # this seems to be the minimum necessary to reproduce the bug
         geeEm('#testing', "n: o p. q'r")
 
-    def test_gibberishCommand(self):
+    def test_gibberishCommands(self):
         """
         Speaking gibberish commands to the bot does not flail
         """
@@ -90,6 +90,9 @@ class IRCTestCase(util.BotTestCase):
         ugm = self.addUser(u"GeeEm")
 
         geeEm('VellumTalk', '.adf91', ('GeeEm', 'wtf!?'))
+
+        # empty commands are ignored
+        geeEm('VellumTalk', '.', )
 
     def test_impersonate(self):
         """
