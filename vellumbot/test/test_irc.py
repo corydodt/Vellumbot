@@ -82,6 +82,18 @@ class IRCTestCase(util.BotTestCase):
         # this seems to be the minimum necessary to reproduce the bug
         geeEm('#testing', "n: o p. q'r")
 
+    def test_urlInChannel(self):
+        """
+        Pasting URLs into the channel shouldn't cause errors
+        """
+        geeEm = lambda *a, **kw: self.anyone('GeeEm', *a, **kw)
+        ugm = self.addUser(u"GeeEm")
+
+        url = 'http://docs.google.com/Doc?id=df3hfb26_34d3f295hd&hl=en&pli=1'
+
+        geeEm('VellumTalk', url, )
+
+
     def test_gibberishCommands(self):
         """
         Speaking gibberish commands to the bot does not flail
