@@ -93,7 +93,6 @@ class IRCTestCase(util.BotTestCase):
 
         geeEm('VellumTalk', url, )
 
-
     def test_gibberishCommands(self):
         """
         Speaking gibberish commands to the bot does not flail
@@ -350,3 +349,34 @@ class IRCTestCase(util.BotTestCase):
         self.addUser(nick.decode('utf-8'))
 
         veryLongNick("VellumTalk", ".hello", *lines)
+
+    def test_splitTextIRCWise(self):
+        """
+        Test the function that breaks irc lines up
+        """
+        s_unbreakable = "j" + "e"*150 + "b"
+        s_breakable =   "jeeee eeeeeeeeeeeeeeeeee eeeeeeeeeeeeeeeeeeee eeeeeeeeeeeeeeeeee eeeeeexeeeeeb"
+        s_prebroken = "jeeeeeeeeeeeeeeeeeeeee eeeeeeeeeeeeeeeeee eeeeeeeeeee\neeeeeeeeeee eeeeexeeeeeb"
+        s_unbreakable2 = "hello there booooooooooooooooooooooooooooooooooooooooooooooooooooooooooxooooooooooooooooooob how are you doing?"
+
+        s1_lines = ["j" + "e"*71, "e"*72, "e"*7 + "b"]
+        s2_lines = ["jeeee eeeeeeeeeeeeeeeeee eeeeeeeeeeeeeeeeeeee eeeeeeeeeeeeeeeeee", 
+                "eeeeeexeeeeeb"]
+        s3_lines = ["jeeeeeeeeeeeeeeeeeeeee eeeeeeeeeeeeeeeeee eeeeeeeeeee",
+                "eeeeeeeeeee eeeeexeeeeeb"]
+        s4_lines = ["hello there boooooooooooooooooooooooooooooooooooooooooooooooooooooooooox",
+                "ooooooooooooooooooob how are you doing?"]
+
+
+        r1 = irc.splitTextIRCWise(s_unbreakable, 72)
+        self.assertEqual(r1, s1_lines)
+
+        r2 = irc.splitTextIRCWise(s_breakable, 72)
+        self.assertEqual(r2, s2_lines)
+
+        r3 = irc.splitTextIRCWise(s_prebroken, 72)
+        self.assertEqual(r3, s3_lines)
+
+        r4 = irc.splitTextIRCWise(s_unbreakable2, 72)
+        self.assertEqual(r4, s4_lines)
+

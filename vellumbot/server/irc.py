@@ -6,6 +6,8 @@ from twisted.words.protocols import irc
 from twisted.internet import reactor, protocol, task
 from twisted.python import log
 
+import textwrap
+
 from storm.locals import Store
 
 from vellumbot.server import linesyntax, d20session
@@ -19,13 +21,12 @@ MAX_LINE = 420
 def splitTextIRCWise(s, width):
     """
     Split s into lines, and for each line longer than width, split it into
-    width-long segments.
+    (at most) width-long segments.  Attempt to word break the line.
     """
     lines = s.splitlines()
     ret = []
     for line in lines:
-        for n in range((len(line)/width) + 1):
-            ret.append(line[n*width:(n+1)*width])
+        ret.extend(textwrap.wrap(line, width))
     return ret
 
 
