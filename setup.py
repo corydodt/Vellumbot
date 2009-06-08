@@ -16,9 +16,7 @@ setup(name='Vellumbot',
       packages=find_packages(),
 
       install_requires=[
-          'pysqlite>=2',
           'playtools>=0.3.0',
-          'storm>=0.13',
           ],
 
       package_data={
