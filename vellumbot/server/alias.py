@@ -4,7 +4,8 @@ try:
 except ImportError:
     import pickle
 
-from playtools import dice, diceparser
+from playtools import dice
+from playtools.parser import diceparser
 
 _alias_hooks = {}
 

@@ -19,7 +19,7 @@ from simpleparse import parser, dispatchprocessor as disp
 from simpleparse.error import ParserSyntaxError
 from simpleparse.common import numbers # importing for side effect
 numbers # shut up pyflakes
-from playtools import diceparser
+from playtools.parser import diceparser
 
 grammar = ( # {{{
 r'''# irc bot commands and recognized sentences
