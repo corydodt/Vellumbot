@@ -71,7 +71,7 @@ class D20Session(session.Session):
 
     def lookup_monster(self, req, terms):
         """
-        Look up a spell and say what it is
+        Look up a monster and say what it is
         """
         return self._lookup_anything(req, terms, u'monster')
 
@@ -83,7 +83,7 @@ class D20Session(session.Session):
 
     def lookup_skill(self, req, terms):
         """
-        Look up a spell and say what it is
+        Look up a skill and say what it is
         """
         return self._lookup_anything(req, terms, u'skill')
 
