@@ -138,7 +138,7 @@ class VellumTalk(irc.IRCClient):
             text = text.encode(encoding)
 
             splittext = splitTextIRCWise(text, MAX_LINE)
-            log.msg("====> %s:    %s" % (_channel, text[:80]))
+            log.msg("====> %s:    %s" % (_channel, text[:160]))
             if len(splittext) > 1:
                 self.msgSlowly(_channel, splittext)
             else:
