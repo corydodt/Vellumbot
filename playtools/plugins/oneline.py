@@ -1,5 +1,5 @@
 """
-Quick hack to make tests pass while I think about a real formatting interface
+Publishers for various types of rule collections.
 """
 import string
 

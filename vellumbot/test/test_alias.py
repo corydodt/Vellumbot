@@ -1,7 +1,8 @@
 import unittest
 from ..server import alias
 from .. import user
-from playtools import dice, diceparser
+from playtools import dice
+from playtools.parser import diceparser
 
 class AliasTestCase(unittest.TestCase):
     def setUp(self):

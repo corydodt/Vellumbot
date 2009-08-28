@@ -62,7 +62,8 @@ class D20Session(session.Session):
                     rg.addResponse(session.Response(line, req, redirectTo=ss))
 
                 count = len(looked)
-                m = 'Replied to %s with top %s matches for SPELL "%s"' % (req.user, count, ts)
+                DOMAIN = domain.upper()
+                m = 'Replied to %s with top %s matches for %s "%s"' % (req.user, count, DOMAIN, ts)
 
                 rg.addResponse(session.Response(m, req))
 
@@ -70,7 +71,7 @@ class D20Session(session.Session):
 
     def lookup_monster(self, req, terms):
         """
-        Look up a spell and say what it is
+        Look up a monster and say what it is
         """
         return self._lookup_anything(req, terms, u'monster')
 
@@ -82,7 +83,7 @@ class D20Session(session.Session):
 
     def lookup_skill(self, req, terms):
         """
-        Look up a spell and say what it is
+        Look up a skill and say what it is
         """
         return self._lookup_anything(req, terms, u'skill')
 

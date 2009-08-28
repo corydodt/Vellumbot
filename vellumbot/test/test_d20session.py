@@ -102,6 +102,12 @@ class TestD20Session(util.BotTestCase):
             )
         )
 
+        # check the message for "top n matches"
+        expectations = (('GeeEm', r'.*'),)*5 # we don't care what the matches were for this test
+        expectations = expectations + (('#testing', r'Replied to GeeEm with top 5 matches for FEAT "weapon"'),)
+
+        geeEm('#testing', '.lookup feat weapon', *expectations)
+
     def test_lookupSkill(self):
         """
         I know how to look up skills
