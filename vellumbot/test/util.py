@@ -10,7 +10,7 @@ from ..server import d20session
 from ..server.irc import VellumTalk
 from .. import user
 
-from playtools.test.util import DiffTestCaseMixin
+from playtools.test.pttestutil import DiffTestCaseMixin
 
 
 def formPrivMsg(*recipients):
